@@ -1,6 +1,6 @@
 Research Goals:
 
-Develop a method to distinguish between humans and bots (and probably cyborgs) based on the data available.
+Develop a method to distinguish between humans and bots based on the data available.
 
 
 Data:
