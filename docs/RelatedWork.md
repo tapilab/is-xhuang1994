@@ -1,19 +1,63 @@
- - Description
+1. Who is Tweeting on Twitter: Human, Bot, or Cyborg?
 
-Social media bots have been around nowadays. They are designed to act like humans - automatically tweeting, retweeting, and responding to other's posts. In addition to bots, there has emerged cyborg referred to either bot-assisted human or human-assisted bot. They are usually maintained by some companies or websites as a media channel and customer service. Most of bots are designed to provide particular services, but they can be very harmful. They can mislead, exploit, and manipulate social media discourse with rumors, spam, malware, misinformation, slander, or even just noise.
+Description:
+The study uses feature-based detection method and multiple classification algorithms to recognize spammers on Twitter.
 
- - What is the problem?
-Twitter bots have become increasingly intelligent and complicated, making their detection more difficult. For example, social bots can search the Web for information and media to fill their profiles, and post collected material at predetermined times, emulating the human temporal signature of content production and consumption—including circadian patterns of daily activity and temporal spikes of information generation.They can even engage in more complex types of interactions, such as entertaining conversations with other people, commenting on their posts, and answering their questions. To acquire visibility, they can infiltrate popular discussions, generating topically-appropriat —and even potentially interesting— content, by identifying relevant keywords and searching online for information fitting that conversation. They can also automatically produce responses through natural language algorithms
+Data and Method:
+The data they collected from each user include:
+ - cumulative distribution function (CDF) of twitter count, 
+ - numbers of follwers and friends
+ - CDF of ratio of followers over friends
+ - number of tweets per hour/week/quarter/year
+ - tweeting device makeup
+ - External URL ratio in tweets
+They applied multiple classification algorithms on the data collected, including entropy-based algorithm and machine-learning algorithm. Their classification accuracies are 94.9%, 93.7%, and 82.8% for human, bot, and cyborg, repectively.
 
- - What data do they collect?
- 
-Relationship graph of users.
-Particular features of users, such as number of tweets, number of friends & followers, temporal features of tweets, tweeting devices used, etc.
 
- - What method do they use?
+2. Detecting and Analyzing Automated Activity on Twitter
 
-Examining the structure of a social graph. SybilRank for example assumes that sybil accounts exhibit a small number of links to legitimate users, instead connecting mostly to other sybils, as they need a large number of social ties to appear trustworthy. Some detection methods can be used to reveal such tightly-knit local communities. This kind of methods is not very powerful since attackers can mimic legitimate accounts community structure. As graph goes large, things can be much more complicated.
+Description:
+The study uses feature-based detection method and mathematically analyzes the collected feature to distinguish between human and bots.
 
-Crowd-sourcing bot detection. Given profiles of some users, it is observed that a group of workers can distinguish bots from legitimate users at a very high accuracy. This method is not cost-effect for a platform with a large pre-existing user base like Tweeter and Facebook. Also it involves some privacy issues.
+Data and Mathod:
+They collected update times of every tweet of users and used Pearson's X^2 test to assess whether a set of update times is consistent with the uniform second-of-the-minute and minute-ofthe-hour distributions expected from human users. They captured a number of accounts  that exhibit anomalous timing behavior.
 
-Feature-based bot detection. Implements a detection algorithm relying upon several highly-predictive features which capture a variety of suspicious behaviors and separate social bots from humans.
+
+3. Detecting Spammers on Twitter
+
+Description:
+The study uses feature-based detection method and analyzes the features using classification algorithms and Pearson's X^2 value.
+
+Data and Mathod:
+The data they collected from each user include:
+ - fraction of tweets with URLs
+ - fraction of tweets with spam word
+ - hashtags per tweet (average)
+ - number of followers per number of followees
+ - account age
+ - number of tweets received
+The used a Support Vector Machine (SVM) classifier on the collected features. Their accuracy of recognizing spammers is 70.1% while the accuracy of recognizing non-spammers is 96.4%. They also used the Pearson's X^2 value to find out which features should be used. Besides, a tring on detecting spammers by detecting spams has got a similar accuracy.
+
+
+4. Uncovering Social Spammers: Social Honeypots + Machine Learning
+
+Description:
+The study uses feature-based detection method. It compared the importance of different features and compared the accuracy of different classifier in this case.
+
+Data and Mathod:
+The data they collected from each user include:
+ - number of friends
+ - About Me (AM) content in tweets
+ - AM length
+ - user age
+ - martial status
+ - sex
+ - following-followers ratio
+ - number of @ per tweet
+ - number of URLs per tweet
+ - account age
+ - number of unique @ per tweet
+ - number of unique URLs per tweet
+ - tweets similarity
+ - number of tweets
+They tried many classifiers to distinguish between humans and bots using the features collected. The Decorate classifier gives the best result: 88.98% of accuracy.
