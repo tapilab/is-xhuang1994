@@ -6,4 +6,5 @@
 *~
 *.ipynb_checkpoints
 *.pyc
-social_honeypot_icwsm_2011
+social_honeypot_icwsm_2011/
+*.txt
