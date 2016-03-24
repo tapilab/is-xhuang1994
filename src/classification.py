@@ -165,7 +165,8 @@ e = 0
 while i < len(X_test):
     if prediction[i] != y_test[i]:
         e += 1
-        fwriter.write(str(X_test))
+        s = "\t".join([str(r) for r in [round(a, 1) for a in X_test[i]]])
+        fwriter.write(s + "\n\n")
     i += 1
 fwriter.close()
 print("errors written to error.txt")
