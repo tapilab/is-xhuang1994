@@ -227,6 +227,12 @@ for record in legitimate_users:
 fwriter_2.close()
 print("data written to legitimate_users.txt")
 
+fwriter_3 = open('urls.txt', encoding = 'utf-8', mode = 'w')
+for url in urls:
+    s = url + '\n'
+    fwriter_3.write(s)
+fwriter_3.close()
+print("data written to urls.txt")
 
 #some index numbers of specific information for future use
 userID = 0
