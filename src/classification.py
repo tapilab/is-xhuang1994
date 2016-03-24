@@ -16,13 +16,14 @@ reader_1 = open("polluters.txt", 'r')
 for line in reader_1:
     tokens = [float(r) for r in re.split("[\t\n]", line)[:23]]
     polluters.append(tokens)
-
+print("data read from polluters.txt")
+    
 legitimate_users = []
 reader_2 = open("legitimate_users.txt", 'r')
 for line in reader_2:
     tokens = [float(r) for r in re.split("[\t\n]", line)[:23]]
     legitimate_users.append(tokens)
-
+print("data read from legitimate_users.txt")
 
 #some index numbers of specific information for future use
 userID = 0
@@ -48,6 +49,8 @@ dataset_X = polluters + legitimate_users
 dataset_Y = [0] * len(polluters) + [1] * len(legitimate_users)
 
 
+#separate each feature from the dataset for analysis
+dataset_X_all_numeric_features = [r[1:] for r in dataset_X]
 dataset_X_numberOfFollowings = [x[1] for x in dataset_X]
 dataset_X_numberOfFollowers = [x[2] for x in dataset_X]
 dataset_X_numberOfTweets = [x[3] for x in dataset_X]
@@ -64,7 +67,7 @@ dataset_X_ratio_urls_tweets = [r[22] for r in dataset_X]
 labels = ["Number of followings", "Number of follwers", "Number of tweets", "Length of screen name", "Length of self description", "Standard deviation difference", "Lag1 autocorrelation", "Ratio of urls over tweets"]
 data = [dataset_X_numberOfFollowings, dataset_X_numberOfFollowers, dataset_X_numberOfTweets, dataset_X_lengthOfScreenName, dataset_X_lengthOfDescriptionInUserProfile, dataset_X_standard_deviation_diff, dataset_X_lag1_autocorrelation, dataset_X_ratio_urls_tweets]
 weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-"""
+
 i = 0
 for d in data:
     plt.plot(d, dataset_Y, 'bo')
@@ -89,19 +92,17 @@ for d in list(range(7)):
     plt.xlabel("Ratio of tweets posted on " + weekdays[d] + "s")
     plt.show()
 
-
+"""
 #plot CDF functions for each feature
 #this method doesn't seem to work correctly, another method is used below
 num_bins = 20
 counts_1, bin_edges_1 = np.histogram(dataset_X_numberOfFollowings[:len(polluters)], bins = num_bins, normed = True)
 cdf_1 = np.cumsum(counts_1)
-print(bin_edges_1[:10])
-print(cdf_1[:10])
 counts_2, bin_edges_2 = np.histogram(dataset_X_numberOfFollowings[len(polluters):], bins = num_bins, normed = True)
 cdf_2 = np.cumsum(counts_2)
 plt.plot(bin_edges_1[1:] + bin_edges_2[1:], cdf_1 + cdf_2)
 plt.show()
-
+"""
 
 #second alternative method to plot CDF functions
 i = 0
@@ -142,7 +143,7 @@ for d in list(range(7)):
     plt.axis([xmin-xmax*0.05, xmax+xmax*0.05, -0.05, 1.05])
     plt.xlabel("CDF - Ratio of tweets posted on " + weekdays[d] + "s")
     plt.show()
-"""
+
 
 
 #need KFold iterator since method "cross_val_score" doesn't provide shuffling function
@@ -151,10 +152,11 @@ kFold = KFold(n = len(dataset_X), n_folds = 10, shuffle = True)
 #build the classifier and do classification based on: all numeric features & each numeric feature
 lr = LogisticRegression()
 
-"""
+
 #randomly separate data into training (80%) and test (20%) sets
 #call lr.fit() and lr.predict() and compare the prediction versus real classes
-#print instances that are incorrectly classified
+#write instances that are classified wrongly into error.txt
+fwriter = open("error.txt", 'w')
 X_train, X_test, y_train, y_test = train_test_split(dataset_X_all_numeric_features, dataset_Y, test_size = 0.2, random_state = 0)
 lr.fit(X_train, y_train)
 prediction = lr.predict(X_test)
@@ -163,8 +165,10 @@ e = 0
 while i < len(X_test):
     if prediction[i] != y_test[i]:
         e += 1
-        print(X_test[i])
+        fwriter.write(str(X_test))
     i += 1
+fwriter.close()
+print("errors written to error.txt")
 print("# errors: ", e)
 print("# total instances: ", len(X_test))
 
@@ -172,12 +176,14 @@ print("# total instances: ", len(X_test))
 #number of iterations (6)
 n = list(range(6))
 
-dataset_X_all_numeric_features = [r[1:] for r in dataset_X]
+print("\n****************************************************\n")
+print("Classification accuracy (10 fold cross validation iterated %d times):" % len(n))
+
 scores_all_numeric_features = 0
 for i in n:
     scores_all_numeric_features += np.mean(cross_validation.cross_val_score(lr, dataset_X_all_numeric_features, dataset_Y, cv = kFold))
 print("All numeric features: ", scores_all_numeric_features / len(n))
-
+"""
 scores_numberOfFollowings = 0
 for i in n:
     scores_numberOfFollowings += np.mean(cross_validation.cross_val_score(lr, dataset_X_numberOfFollowings, dataset_Y, cv = kFold))
@@ -289,7 +295,7 @@ scores_no_ratio_urls_tweets = 0
 for i in n:
     scores_no_ratio_urls_tweets += np.mean(cross_validation.cross_val_score(lr, dataset_X_no_ratio_urls_tweets, dataset_Y, cv = kFold))
 print("no ratio of urls over tweets: ", scores_no_ratio_urls_tweets / len(n))
-
+"""
 print("\n****************************************************\n")
 print("Coefficients: \n")
 
@@ -305,4 +311,4 @@ print("Lag one autocorrelation: ", coef[6])
 print("Number of tweets each weekday (avg): ", np.mean(coef[7:14]))
 print("Ratio of tweets each weekday (avg): ", np.mean(coef[14:21]))
 print("Ratio of urls over tweets: ", coef[21])
-"""
+

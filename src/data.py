@@ -17,6 +17,7 @@ for line in reader_1:
     parsed_tokens = [int(r) for r in ([tokens[0]] + tokens[3:8])]
     polluters.append(parsed_tokens)
 reader_1.close()
+print("data read from social_honeypot_icwsm_2011\content_polluters.txt")
 
 #read the file of legitimate users information, and convert it into usable dataset
 reader_2 = open("social_honeypot_icwsm_2011\legitimate_users.txt", 'r')
@@ -26,6 +27,7 @@ for line in reader_2:
     parsed_tokens = [int(r) for r in ([tokens[0]] + tokens[3:8])]
     legitimate_users.append(parsed_tokens)
 reader_2.close()
+print("data read from social_honeypot_icwsm_2011\legitimate_users.txt")
 
 #read text file containing series of number of followings for each bot user
 reader_3 = open("social_honeypot_icwsm_2011\content_polluters_followings.txt", 'r')
@@ -54,6 +56,7 @@ for line in reader_3:
     polluters[i].append(ac)
     i += 1
 reader_3.close()
+print("data read from social_honeypot_icwsm_2011\content_polluters_followings.txt")
 
 #read text file containing series of number of followings for each human user
 reader_4 = open("social_honeypot_icwsm_2011\legitimate_users_followings.txt", 'r')
@@ -81,6 +84,7 @@ for line in reader_4:
     legitimate_users[i].append(ac)
     i += 1
 reader_4.close()
+print("data read from social_honeypot_icwsm_2011\legitimate_users_followings.txt")
 
 #read the text file of tweets posted by each bot user
 reader_5 = open("social_honeypot_icwsm_2011\content_polluters_tweets.txt", encoding = 'utf-8', mode = 'r')
@@ -131,7 +135,7 @@ while 1:
     curr_tweets_weekday.append(post_date.weekday())
     curr_line = reader_5.readline()
 reader_5.close()
-
+print("data read from social_honeypot_icwsm_2011\content_polluters_tweets.txt")
 
 #read the text file of tweets posted by each human user
 reader_6 = open("social_honeypot_icwsm_2011\legitimate_users_tweets.txt", encoding = 'utf-8', mode = 'r')
@@ -181,6 +185,7 @@ while 1:
     curr_tweets_weekday.append(post_date.weekday())
     curr_line = reader_6.readline()
 reader_6.close()
+print("data read from social_honeypot_icwsm_2011\legitimate_users_tweets.txt")
 
 
 #Found 44 ambiguous users who are in both polluters and legitimate users, delete those users
@@ -197,7 +202,8 @@ while i < len(polluters) and j < len(legitimate_users):
         i += 1
     else:
         j += 1
-print("%d users deleted!" % count)
+print("%d mislabeled users deleted!" % count)
+
 
 #add 0's for missing values (some users have no tweets recorded)
 i = 0
@@ -210,6 +216,7 @@ while j < len(legitimate_users):
     if len(legitimate_users[j]) < 23:
         legitimate_users[j] += [0] * 15
     j += 1
+print("added 0's for missing values")
 
 
 #write collected & processed data into files
