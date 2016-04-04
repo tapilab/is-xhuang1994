@@ -1,6 +1,7 @@
 import re
 from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
 from sklearn import cross_validation
+from sklearn import svm
 from sklearn.cross_validation import KFold
 import numpy as np
 import csv
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 #This file reads data from polluters.txt and legitimate_users.txt and classify the records
 
 
-#read data from polluters.txt and legitimate_users.txt
+#Read data from polluters.txt and legitimate_users.txt
 polluters = []
 reader_1 = open("polluters.txt", 'r')
 for line in reader_1:
@@ -25,7 +26,7 @@ for line in reader_2:
     legitimate_users.append(tokens)
 print("data read from legitimate_users.txt")
 
-#some index numbers of specific information for future use
+#Some index numbers of specific information for future use
 userID = 0
 numberOfFollowings = 1
 numberOfFollowers = 2
@@ -35,21 +36,21 @@ lengthOfDescriptionInUserProfile = 5
 standard_deviation_diff = 6
 lag1_autocorrelation = 7
 number_tweets_Monday = 8
-#omited index numbers for number of tweets posted each day Tuesday - Saturday
+#Omited index numbers for number of tweets posted each day Tuesday - Saturday
 number_tweets_Sunday = 14
 ratio_tweets_Monday = 15
-#omited index numbers for ratio of tweets posted each day Tuesday - Saturday
+#Omited index numbers for ratio of tweets posted each day Tuesday - Saturday
 ratio_tweets_Sunday = 21
 ratio_urls_tweets = 22
 
 
-#combine 2 datasets for classification, dataset_Y is the target list
+#Combine 2 datasets for classification, dataset_Y is the target list
 #the data will be shuffled before classify
 dataset_X = polluters + legitimate_users
 dataset_Y = [0] * len(polluters) + [1] * len(legitimate_users)
 
 
-#separate each feature from the dataset for analysis
+#Separate each feature from the dataset for analysis
 dataset_X_all_numeric_features = [r[1:] for r in dataset_X]
 dataset_X_numberOfFollowings = [x[1] for x in dataset_X]
 dataset_X_numberOfFollowers = [x[2] for x in dataset_X]
@@ -62,8 +63,8 @@ dataset_X_number_tweets_weekdays = [r[8:15] for r in dataset_X]
 dataset_X_ratio_tweets_weekdays = [r[15:22] for r in dataset_X]
 dataset_X_ratio_urls_tweets = [r[22] for r in dataset_X]
 
-
-#plot distribution graphs for each feature
+"""
+#Plot distribution graphs for each feature
 labels = ["Number of followings", "Number of follwers", "Number of tweets", "Length of screen name", "Length of self description", "Standard deviation difference", "Lag1 autocorrelation", "Ratio of urls over tweets"]
 data = [dataset_X_numberOfFollowings, dataset_X_numberOfFollowers, dataset_X_numberOfTweets, dataset_X_lengthOfScreenName, dataset_X_lengthOfDescriptionInUserProfile, dataset_X_standard_deviation_diff, dataset_X_lag1_autocorrelation, dataset_X_ratio_urls_tweets]
 weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -92,19 +93,19 @@ for d in list(range(7)):
     plt.xlabel("Ratio of tweets posted on " + weekdays[d] + "s")
     plt.show()
 
-"""
-#plot CDF functions for each feature
-#this method doesn't seem to work correctly, another method is used below
-num_bins = 20
-counts_1, bin_edges_1 = np.histogram(dataset_X_numberOfFollowings[:len(polluters)], bins = num_bins, normed = True)
-cdf_1 = np.cumsum(counts_1)
-counts_2, bin_edges_2 = np.histogram(dataset_X_numberOfFollowings[len(polluters):], bins = num_bins, normed = True)
-cdf_2 = np.cumsum(counts_2)
-plt.plot(bin_edges_1[1:] + bin_edges_2[1:], cdf_1 + cdf_2)
-plt.show()
-"""
 
-#second alternative method to plot CDF functions
+#Plot CDF functions for each feature
+#This method doesn't seem to work correctly, another method is used below
+#num_bins = 20
+#counts_1, bin_edges_1 = np.histogram(dataset_X_numberOfFollowings[:len(polluters)], bins = num_bins, normed = True)
+#cdf_1 = np.cumsum(counts_1)
+#counts_2, bin_edges_2 = np.histogram(dataset_X_numberOfFollowings[len(polluters):], bins = num_bins, normed = True)
+#cdf_2 = np.cumsum(counts_2)
+#plt.plot(bin_edges_1[1:] + bin_edges_2[1:], cdf_1 + cdf_2)
+#plt.show()
+
+
+#Second alternative method to plot CDF functions
 i = 0
 for d in data:
     sorted_data_1 = list(np.sort(d[:len(polluters)]))
@@ -144,17 +145,38 @@ for d in list(range(7)):
     plt.xlabel("CDF - Ratio of tweets posted on " + weekdays[d] + "s")
     plt.show()
 
+#Plot graph of #followers / #followings to see the data distribution patterns
+plt.plot([x[1] for x in dataset_X][len(polluters):], [x[2] for x in dataset_X][len(polluters):], "go")
+plt.plot([x[1] for x in dataset_X][:len(polluters)], [x[2] for x in dataset_X][:len(polluters)], "bo")
+plt.axis([-10, 5000, -10, 40000])
+plt.show()    
 
 
-#need KFold iterator since method "cross_val_score" doesn't provide shuffling function
+#Try Support Vector Classification with different kernels
+#This only works when kernel='rbf', can't figure out why
+X_train, X_test, y_train, y_test = train_test_split(dataset_X_all_numeric_features, dataset_Y, test_size = 0.8, random_state = 0)
+clf = svm.SVC(kernel='rbf')
+clf.fit(X_train, y_train)
+prediction = clf.predict(X_test)
+i = 0
+e = 0
+while i < len(prediction):
+    if prediction[i] != y_test[i]:
+        e += 1
+    i += 1
+print("# errors (total: %d): " % len(X_test))
+print("rbf: ", e)
+"""
+
+#Need KFold iterator since method "cross_val_score" doesn't provide shuffling function
 kFold = KFold(n = len(dataset_X), n_folds = 10, shuffle = True)
 
-#build the classifier and do classification based on: all numeric features & each numeric feature
+#Build the classifier and do classification based on: all numeric features & each numeric feature
 lr = LogisticRegression()
 
-
-#randomly separate data into training (80%) and test (20%) sets
-#call lr.fit() and lr.predict() and compare the prediction versus real classes
+"""
+#Randomly separate data into training (80%) and test (20%) sets
+#Call lr.fit() and lr.predict() and compare the prediction versus real classes
 #write instances that are classified wrongly into error.txt
 fwriter = open("error.txt", 'w')
 X_train, X_test, y_train, y_test = train_test_split(dataset_X_all_numeric_features, dataset_Y, test_size = 0.2, random_state = 0)
@@ -172,8 +194,53 @@ fwriter.close()
 print("errors written to error.txt")
 print("# errors: ", e)
 print("# total instances: ", len(X_test))
+"""
 
 
+#Separate dataset_X_all_numeric_features into bins by #followings and try classification
+#Drop some outliers based on the #followers / #followings distribution graph
+data = dataset_X_all_numeric_features
+num_bins = 6
+bins_X = [[], [], []]
+bins_Y = [[], [], []]
+i = 0
+while i < len(data):
+    if data[i][0] < 500:
+        if data[i][1] > 1500:
+            bins_X[0].append(data[i])
+            bins_Y[0].append(dataset_Y[i])
+        else:
+            bins_X[1].append(data[i])
+            bins_Y[1].append(dataset_Y[i])
+    elif data[i][1] < data[i][0]*0.9+10000:
+        #The #followers/#followings ratio is below the generalized line
+        if data[i][0] < 2005:
+            bins_X[1].append(data[i])
+            bins_Y[1].append(dataset_Y[i])
+        else:
+            bins_X[2].append(data[i])
+            bins_Y[2].append(dataset_Y[i])
+    i += 1
+num_outliers = len(data) - np.sum(len(x) for x in bins_X)
+print("%d outliers are dropped" % num_outliers)
+
+i = 0
+num_corr = 0
+#number of iterations (6)
+n = list(range(6))
+while i < len(bins_X):
+    temp_kFold = KFold(n = len(bins_X[i]), n_folds = 10, shuffle = True)
+    scores_bin = 0
+    for j in n:
+        scores_bin += np.mean(cross_validation.cross_val_score(lr, [x[1:] for x in bins_X[i]], bins_Y[i], cv = temp_kFold))
+    print("Bin #%d: %d instances, where %f are bots %f accuracy" % (i, len(bins_X[i]), len([x for x in bins_Y[i] if x == 0]) / len(bins_Y[i]), scores_bin / len(n)))
+    num_corr += scores_bin / len(n) * len(bins_X[i])
+    i += 1
+total_score = num_corr / (len(dataset_X) - num_outliers)
+print("total score: %f" % total_score)
+
+
+"""
 #number of iterations (6)
 n = list(range(6))
 
@@ -184,7 +251,7 @@ scores_all_numeric_features = 0
 for i in n:
     scores_all_numeric_features += np.mean(cross_validation.cross_val_score(lr, dataset_X_all_numeric_features, dataset_Y, cv = kFold))
 print("All numeric features: ", scores_all_numeric_features / len(n))
-"""
+
 scores_numberOfFollowings = 0
 for i in n:
     scores_numberOfFollowings += np.mean(cross_validation.cross_val_score(lr, dataset_X_numberOfFollowings, dataset_Y, cv = kFold))
@@ -296,7 +363,7 @@ scores_no_ratio_urls_tweets = 0
 for i in n:
     scores_no_ratio_urls_tweets += np.mean(cross_validation.cross_val_score(lr, dataset_X_no_ratio_urls_tweets, dataset_Y, cv = kFold))
 print("no ratio of urls over tweets: ", scores_no_ratio_urls_tweets / len(n))
-"""
+
 print("\n****************************************************\n")
 print("Coefficients: \n")
 
@@ -312,4 +379,4 @@ print("Lag one autocorrelation: ", coef[6])
 print("Number of tweets each weekday (avg): ", np.mean(coef[7:14]))
 print("Ratio of tweets each weekday (avg): ", np.mean(coef[14:21]))
 print("Ratio of urls over tweets: ", coef[21])
-
+"""

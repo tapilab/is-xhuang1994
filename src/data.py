@@ -89,7 +89,7 @@ print("data read from social_honeypot_icwsm_2011\legitimate_users_followings.txt
 #read the text file of tweets posted by each bot user
 reader_5 = open("social_honeypot_icwsm_2011\content_polluters_tweets.txt", encoding = 'utf-8', mode = 'r')
 
-urls = []                   #collection of urls from tweets
+urls_polluters = []         #collection of urls from polluters
 #convert the contend read into usable dataset
 prev_userID = 0
 curr_userID = 0
@@ -120,7 +120,7 @@ while 1:
         while k < 7:
             polluters[index].append(curr_tweets_weekday.count(k) / len(curr_tweets_weekday))
             k += 1
-        urls += urls_tweet
+        urls_polluters += urls_tweet
         polluters[index].append(len(urls_tweet) / len(curr_tweets))
         urls_tweet = []
         curr_tweetIDs = []
@@ -140,6 +140,7 @@ print("data read from social_honeypot_icwsm_2011\content_polluters_tweets.txt")
 #read the text file of tweets posted by each human user
 reader_6 = open("social_honeypot_icwsm_2011\legitimate_users_tweets.txt", encoding = 'utf-8', mode = 'r')
 
+urls_humans = []            #collection of urls from humans
 #convert the contend read into usable dataset
 prev_userID = 0
 curr_userID = 0
@@ -170,7 +171,7 @@ while 1:
         while k < 7:
             legitimate_users[index].append(curr_tweets_weekday.count(k) / len(curr_tweets_weekday))
             k += 1
-        urls += urls_tweet
+        urls_humans += urls_tweet
         legitimate_users[index].append(len(urls_tweet) / len(curr_tweets))
         urls_tweet = []
         curr_tweetIDs = []
@@ -234,12 +235,19 @@ for record in legitimate_users:
 fwriter_2.close()
 print("data written to legitimate_users.txt")
 
-fwriter_3 = open('urls.txt', encoding = 'utf-8', mode = 'w')
-for url in urls:
+fwriter_3 = open('urls_polluters.txt', encoding = 'utf-8', mode = 'w')
+for url in urls_polluters:
     s = url + '\n'
     fwriter_3.write(s)
 fwriter_3.close()
-print("data written to urls.txt")
+print("data written to urls_polluters.txt")
+
+fwriter_4 = open('urls_legitimate_users.txt', encoding = 'utf-8', mode = 'w')
+for url in urls_humans:
+    s = url + '\n'
+    fwriter_4.write(s)
+fwriter_3.close()
+print("data written to urls_legitimate_users.txt")
 
 #some index numbers of specific information for future use
 userID = 0
