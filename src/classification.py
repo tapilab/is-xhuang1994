@@ -2,11 +2,13 @@ import re
 from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
 from sklearn import cross_validation
 from sklearn import svm
+from sklearn.metrics import f1_score
 from sklearn.cross_validation import KFold
 import numpy as np
 import csv
 from sklearn.cross_validation import train_test_split
 import matplotlib.pyplot as plt
+
 
 #This file reads data from polluters.txt and legitimate_users.txt and classify the records
 
@@ -199,46 +201,82 @@ print("# total instances: ", len(X_test))
 
 #Separate dataset_X_all_numeric_features into bins by #followings and try classification
 #Drop some outliers based on the #followers / #followings distribution graph
-data = dataset_X_all_numeric_features
-num_bins = 6
-bins_X = [[], [], []]
-bins_Y = [[], [], []]
 i = 0
-while i < len(data):
-    if data[i][0] < 500:
-        if data[i][1] > 1500:
-            bins_X[0].append(data[i])
-            bins_Y[0].append(dataset_Y[i])
-        else:
-            bins_X[1].append(data[i])
-            bins_Y[1].append(dataset_Y[i])
-    elif data[i][1] < data[i][0]*0.9+10000:
-        #The #followers/#followings ratio is below the generalized line
-        if data[i][0] < 2005:
-            bins_X[1].append(data[i])
-            bins_Y[1].append(dataset_Y[i])
-        else:
-            bins_X[2].append(data[i])
-            bins_Y[2].append(dataset_Y[i])
+while i < len(dataset_X_all_numeric_features):
+    dataset_X_all_numeric_features[i] = dataset_X_all_numeric_features[i][:4] + dataset_X_all_numeric_features[i][5:]
+    if dataset_X_all_numeric_features[i][1] == 0:
+        dataset_X_all_numeric_features[i].append(0)
+    else:
+        dataset_X_all_numeric_features[i].append(dataset_X_all_numeric_features[i][0]/dataset_X_all_numeric_features[i][1])
     i += 1
-num_outliers = len(data) - np.sum(len(x) for x in bins_X)
-print("%d outliers are dropped" % num_outliers)
 
+data_1 = dataset_X_all_numeric_features
+data_x = []
+data_y = []
+outliers_x = []
+outliers_y = []
 i = 0
-num_corr = 0
+while i < len(data_1):
+    if data_1[i][0] < 500:
+        if data_1[i][1] > 1500:
+            data_x.append(data_1[i] + [1, 0, 0])
+            data_y.append(dataset_Y[i])
+        else:
+            data_x.append(data_1[i] + [0, 1, 0])
+            data_y.append(dataset_Y[i])
+    elif data_1[i][1] < data_1[i][0]*0.9+10000:
+        #The #followers/#followings ratio is below the generalized line
+        if data_1[i][0] < 2005:
+            data_x.append(data_1[i] + [0, 1, 0])
+            data_y.append(dataset_Y[i])
+        else:
+            data_x.append(data_1[i] + [0, 0, 1])
+            data_y.append(dataset_Y[i])
+    else:
+        outliers_x.append(data_1[i])
+        outliers_y.append(dataset_Y[i])
+    i += 1
+
+print("%d outliers are dropped" % len(outliers_x))
+
+
 #number of iterations (6)
 n = list(range(6))
-while i < len(bins_X):
-    temp_kFold = KFold(n = len(bins_X[i]), n_folds = 10, shuffle = True)
-    scores_bin = 0
-    for j in n:
-        scores_bin += np.mean(cross_validation.cross_val_score(lr, [x[1:] for x in bins_X[i]], bins_Y[i], cv = temp_kFold))
-    print("Bin #%d: %d instances, where %f are bots %f accuracy" % (i, len(bins_X[i]), len([x for x in bins_Y[i] if x == 0]) / len(bins_Y[i]), scores_bin / len(n)))
-    num_corr += scores_bin / len(n) * len(bins_X[i])
-    i += 1
-total_score = num_corr / (len(dataset_X) - num_outliers)
-print("total score: %f" % total_score)
+kFold_1 = KFold(n = len(data_x), n_folds = 10, shuffle = True)
+score = 0
+for j in n:
+    score += np.mean(cross_validation.cross_val_score(lr, data_x, data_y, cv = kFold_1))
+score /= len(n)
+print("%d instances, where %f are bots, %f accuracy" % (len(data_x), data_y.count(0)/len(data_y), score))
 
+
+#number of iterations (6)
+n = list(range(6))
+e_h = 0
+e_b = 0
+f1_bots = 0
+f1_humans = 0
+for k in n:
+    X_train, X_test, y_train, y_test = train_test_split(data_x, data_y, test_size = 0.2, random_state = k)
+    lr.fit(X_train, y_train)
+    prediction = lr.predict(X_test)
+    i = 0
+    while i < len(X_test):
+        if prediction[i] != y_test[i]:
+            if y_test[i] == 0:
+                e_b += 1
+            else:
+                e_h += 1
+        i += 1
+    f1_bots += f1_score(y_test, prediction, pos_label = 0)
+    f1_humans += f1_score(y_test, prediction, pos_label = 1)
+e_h /= len(n)
+e_b /= len(n)
+f1_bots /= len(n)
+f1_humans /= len(n)
+print("humans accuracy:\t", 1-e_h/y_test.count(1))
+print("bots accuracy:   \t", 1-e_b/y_test.count(0))
+print("f1 scores:\nhumans:\t%f\nbots:\t%f" % (f1_humans, f1_bots))
 
 """
 #number of iterations (6)
