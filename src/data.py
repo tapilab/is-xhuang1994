@@ -38,6 +38,12 @@ for line in reader_3:
     tokens = [int(r) for r in re.split("[\D]", line) if r != ""][1:]
     #calculate standard deviation of the differences of the data
     sd = stat.pstdev(tokens)
+    fd = []
+    j = 1
+    while j < len(tokens):
+        fd.append(tokens[j] - tokens[j-1])
+        j += 1
+    sdd = stat.pstdev(fd)
     #calculate lag one autocorrelation
     #ac = np.correlate(tokens[1:len(tokens)], tokens[:len(tokens) - 1])  """I can't find what I need from output from this function as a single number"""
     avg = np.mean(tokens)
@@ -53,6 +59,7 @@ for line in reader_3:
     else:
         ac = numerator / denominator
     polluters[i].append(sd)
+    polluters[i].append(sdd)
     polluters[i].append(ac)
     i += 1
 reader_3.close()
@@ -67,6 +74,12 @@ for line in reader_4:
     tokens = [int(r) for r in re.split("[\D]", line) if r != ""][1:]
     #calculate standard deviation of the differences of the data
     sd = stat.pstdev(tokens)
+    fd = []
+    j = 1
+    while j < len(tokens):
+        fd.append(tokens[j] - tokens[j-1])
+        j += 1
+    sdd = stat.pstdev(fd)
     #calculate lag one autocorrelation
     avg = np.mean(tokens)
     j = 0
@@ -81,6 +94,7 @@ for line in reader_4:
     else:
         ac = numerator / denominator
     legitimate_users[i].append(sd)
+    legitimate_users[i].append(sdd)
     legitimate_users[i].append(ac)
     i += 1
 reader_4.close()
@@ -97,7 +111,9 @@ curr_tweetIDs = []          #collection of ids of tweets posted by current user
 curr_tweets = []            #collection of tweets posted by current user
 curr_tweets_created_at = [] #create dates of tweets
 curr_tweets_weekday = []    #weekdays of create dates of tweets
-urls_tweet = []             #number of urls from tweets of current user
+urls_tweets = []             #collection of urls from tweets of current user
+at_tweets = []               #collection of @ from tweets of current user
+hashtags_tweets = []         #collection of hashtags from tweets of current user
 polluter_ids = [s[0] for s in polluters]
 curr_line = reader_5.readline()
 while 1:
@@ -120,16 +136,25 @@ while 1:
         while k < 7:
             polluters[index].append(curr_tweets_weekday.count(k) / len(curr_tweets_weekday))
             k += 1
-        urls_polluters += urls_tweet
-        polluters[index].append(len(urls_tweet) / len(curr_tweets))
-        urls_tweet = []
+        urls_polluters += urls_tweets
+        polluters[index].append(len(urls_tweets) / len(curr_tweets))
+        polluters[index].append(len(set(urls_tweets)) / len(curr_tweets))
+        polluters[index].append(len(at_tweets) / len(curr_tweets))
+        polluters[index].append(len(set(at_tweets)) / len(curr_tweets))
+        polluters[index].append(len(hashtags_tweets) / len(curr_tweets))
+        polluters[index].append(len(set(hashtags_tweets)) / len(curr_tweets))
+        urls_tweets = []
+        at_tweets = []
+        hashtags_tweets = []
         curr_tweetIDs = []
         curr_tweets = []
         curr_tweets_created_at = []
         curr_tweets_weekday = []
         if curr_line == '':
             break
-    urls_tweet += re.findall('http[\S]+', tokens[2])
+    urls_tweets += re.findall('http[\S]+', tokens[2])
+    at_tweets += re.findall('@[\S]+', tokens[2])
+    hashtags_tweets += re.findall('#[\S]+', tokens[2])
     curr_tweets.append(tokens[2])
     curr_tweetIDs.append(int(tokens[1]))
     curr_tweets_weekday.append(post_date.weekday())
@@ -148,7 +173,9 @@ curr_tweetIDs = []          #collection of ids of tweets posted by current user
 curr_tweets = []            #collection of tweets posted by current user
 curr_tweets_created_at = [] #create dates of tweets
 curr_tweets_weekday = []    #weekdays of create dates of tweets
-urls_tweet = []             #number of urls from tweets of current user
+urls_tweets = []             #collection of urls from tweets of current user
+at_tweets = []               #collection of @ from tweets of current user
+hashtags_tweets = []         #collection of hashtags from tweets of current user
 legitimate_user_ids = [s[0] for s in legitimate_users]
 curr_line = reader_6.readline()
 while 1:
@@ -171,16 +198,25 @@ while 1:
         while k < 7:
             legitimate_users[index].append(curr_tweets_weekday.count(k) / len(curr_tweets_weekday))
             k += 1
-        urls_humans += urls_tweet
-        legitimate_users[index].append(len(urls_tweet) / len(curr_tweets))
-        urls_tweet = []
+        urls_humans += urls_tweets
+        legitimate_users[index].append(len(urls_tweets) / len(curr_tweets))
+        legitimate_users[index].append(len(set(urls_tweets)) / len(curr_tweets))
+        legitimate_users[index].append(len(at_tweets) / len(curr_tweets))
+        legitimate_users[index].append(len(set(at_tweets)) / len(curr_tweets))
+        legitimate_users[index].append(len(hashtags_tweets) / len(curr_tweets))
+        legitimate_users[index].append(len(set(hashtags_tweets)) / len(curr_tweets))
+        urls_tweets = []
+        at_tweets = []
+        hashtags_tweets = []
         curr_tweetIDs = []
         curr_tweets = []
         curr_tweets_created_at = []
         curr_tweets_weekday = []
         if curr_line == '':
             break
-    urls_tweet += re.findall('http[\S]+', tokens[2])
+    urls_tweets += re.findall('http[\S]+', tokens[2])
+    at_tweets += re.findall('@[\S]+', tokens[2])
+    hashtags_tweets += re.findall('#[\S]+', tokens[2])
     curr_tweets.append(tokens[2])
     curr_tweetIDs.append(int(tokens[1]))
     curr_tweets_weekday.append(post_date.weekday())
@@ -256,12 +292,18 @@ numberOfFollowers = 2
 numberOfTweets = 3
 lengthOfScreenName = 4
 lengthOfDescriptionInUserProfile = 5
-standard_deviation_diff = 6
-lag1_autocorrelation = 7
-number_tweets_Monday = 8
+standard_deviation_follwings = 6
+standard_deviation_diff_follwings = 7
+lag1_autocorrelation = 8
+number_tweets_Monday = 9
 #omited index numbers for number of tweets posted each day Tuesday - Saturday
-number_tweets_Sunday = 14
-ratio_tweets_Monday = 15
+number_tweets_Sunday = 15
+ratio_tweets_Monday = 16
 #omited index numbers for ratio of tweets posted each day Tuesday - Saturday
-ratio_tweets_Sunday = 21
-ratio_urls_tweets = 22
+ratio_tweets_Sunday = 22
+ratio_urls_tweets = 23
+ratio_unique_urls_tweets = 24
+ratio_at_tweets = 25
+ratio_unique_at_tweets = 26
+ratio_hashtags_tweets = 27
+ratio_unique_hashtags_tweets = 28

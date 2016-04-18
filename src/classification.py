@@ -2,8 +2,9 @@ import re
 from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
 from sklearn import cross_validation
 from sklearn import svm
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.cross_validation import KFold
+from sklearn.preprocessing import scale
 import numpy as np
 import csv
 from sklearn.cross_validation import train_test_split
@@ -28,22 +29,28 @@ for line in reader_2:
     legitimate_users.append(tokens)
 print("data read from legitimate_users.txt")
 
-#Some index numbers of specific information for future use
+#some index numbers of specific information for future use
 userID = 0
 numberOfFollowings = 1
 numberOfFollowers = 2
 numberOfTweets = 3
 lengthOfScreenName = 4
 lengthOfDescriptionInUserProfile = 5
-standard_deviation_diff = 6
-lag1_autocorrelation = 7
-number_tweets_Monday = 8
-#Omited index numbers for number of tweets posted each day Tuesday - Saturday
-number_tweets_Sunday = 14
-ratio_tweets_Monday = 15
-#Omited index numbers for ratio of tweets posted each day Tuesday - Saturday
-ratio_tweets_Sunday = 21
-ratio_urls_tweets = 22
+standard_deviation_follwings = 6
+standard_deviation_diff_follwings = 7
+lag1_autocorrelation = 8
+number_tweets_Monday = 9
+#omited index numbers for number of tweets posted each day Tuesday - Saturday
+number_tweets_Sunday = 15
+ratio_tweets_Monday = 16
+#omited index numbers for ratio of tweets posted each day Tuesday - Saturday
+ratio_tweets_Sunday = 22
+ratio_urls_tweets = 23
+ratio_unique_urls_tweets = 24
+ratio_at_tweets = 25
+ratio_unique_at_tweets = 26
+ratio_hashtags_tweets = 27
+ratio_unique_hashtags_tweets = 28
 
 
 #Combine 2 datasets for classification, dataset_Y is the target list
@@ -51,19 +58,8 @@ ratio_urls_tweets = 22
 dataset_X = polluters + legitimate_users
 dataset_Y = [0] * len(polluters) + [1] * len(legitimate_users)
 
+data_1 = [r[1:] for r in dataset_X]
 
-#Separate each feature from the dataset for analysis
-dataset_X_all_numeric_features = [r[1:] for r in dataset_X]
-dataset_X_numberOfFollowings = [x[1] for x in dataset_X]
-dataset_X_numberOfFollowers = [x[2] for x in dataset_X]
-dataset_X_numberOfTweets = [x[3] for x in dataset_X]
-dataset_X_lengthOfScreenName = [x[4] for x in dataset_X]
-dataset_X_lengthOfDescriptionInUserProfile = [x[5] for x in dataset_X]
-dataset_X_standard_deviation_diff = [r[6] for r in dataset_X]
-dataset_X_lag1_autocorrelation = [r[7] for r in dataset_X]
-dataset_X_number_tweets_weekdays = [r[8:15] for r in dataset_X]
-dataset_X_ratio_tweets_weekdays = [r[15:22] for r in dataset_X]
-dataset_X_ratio_urls_tweets = [r[22] for r in dataset_X]
 
 """
 #Plot distribution graphs for each feature
@@ -156,7 +152,7 @@ plt.show()
 
 #Try Support Vector Classification with different kernels
 #This only works when kernel='rbf', can't figure out why
-X_train, X_test, y_train, y_test = train_test_split(dataset_X_all_numeric_features, dataset_Y, test_size = 0.8, random_state = 0)
+X_train, X_test, y_train, y_test = train_test_split(data_1, dataset_Y, test_size = 0.8, random_state = 0)
 clf = svm.SVC(kernel='rbf')
 clf.fit(X_train, y_train)
 prediction = clf.predict(X_test)
@@ -171,7 +167,7 @@ print("rbf: ", e)
 """
 
 #Need KFold iterator since method "cross_val_score" doesn't provide shuffling function
-kFold = KFold(n = len(dataset_X), n_folds = 10, shuffle = True)
+kFold = KFold(n = len(data_1), n_folds = 10, shuffle = True)
 
 #Build the classifier and do classification based on: all numeric features & each numeric feature
 lr = LogisticRegression()
@@ -181,7 +177,7 @@ lr = LogisticRegression()
 #Call lr.fit() and lr.predict() and compare the prediction versus real classes
 #write instances that are classified wrongly into error.txt
 fwriter = open("error.txt", 'w')
-X_train, X_test, y_train, y_test = train_test_split(dataset_X_all_numeric_features, dataset_Y, test_size = 0.2, random_state = 0)
+X_train, X_test, y_train, y_test = train_test_split(data_1, dataset_Y, test_size = 0.2, random_state = 0)
 lr.fit(X_train, y_train)
 prediction = lr.predict(X_test)
 i = 0
@@ -199,18 +195,17 @@ print("# total instances: ", len(X_test))
 """
 
 
-#Separate dataset_X_all_numeric_features into bins by #followings and try classification
+#Separate data_1 into bins by #followings and try classification
 #Drop some outliers based on the #followers / #followings distribution graph
 i = 0
-while i < len(dataset_X_all_numeric_features):
-    dataset_X_all_numeric_features[i] = dataset_X_all_numeric_features[i][:4] + dataset_X_all_numeric_features[i][5:]
-    if dataset_X_all_numeric_features[i][1] == 0:
-        dataset_X_all_numeric_features[i].append(0)
+while i < len(data_1):
+    data_1[i] = data_1[i][:4] + data_1[i][5:]
+    if data_1[i][1] == 0:
+        data_1[i].append(0)
     else:
-        dataset_X_all_numeric_features[i].append(dataset_X_all_numeric_features[i][0]/dataset_X_all_numeric_features[i][1])
+        data_1[i].append(data_1[i][0]/data_1[i][1])
     i += 1
 
-data_1 = dataset_X_all_numeric_features
 data_x = []
 data_y = []
 outliers_x = []
@@ -240,43 +235,45 @@ while i < len(data_1):
 print("%d outliers are dropped" % len(outliers_x))
 
 
-#number of iterations (6)
-n = list(range(6))
+#scale the data
+max_values = np.matrix(data_x).mean(0).tolist()[0][:-1] + [1]
+data_x = [[x/y for x, y in list(zip(z, max_values))] for z in data_x]
+print("data scaled")
+print("%d instances, where %g are bots" % (len(data_x), data_y.count(0)/len(data_y)))
+
 kFold_1 = KFold(n = len(data_x), n_folds = 10, shuffle = True)
-score = 0
-for j in n:
-    score += np.mean(cross_validation.cross_val_score(lr, data_x, data_y, cv = kFold_1))
-score /= len(n)
-print("%d instances, where %f are bots, %f accuracy" % (len(data_x), data_y.count(0)/len(data_y), score))
-
-
-#number of iterations (6)
-n = list(range(6))
 e_h = 0
 e_b = 0
-f1_bots = 0
-f1_humans = 0
-for k in n:
-    X_train, X_test, y_train, y_test = train_test_split(data_x, data_y, test_size = 0.2, random_state = k)
+predictions = []
+y_tests = []
+conf_matrix = np.matrix([[0, 0], [0, 0]])
+score = np.mean(cross_validation.cross_val_score(lr, data_x, data_y, cv = kFold_1))
+for train_index, test_index in kFold_1:
+    data_x, data_y = np.array(data_x), np.array(data_y)
+    X_train, X_test = list(data_x[train_index]), list(data_x[test_index])
+    y_train, y_test = list(data_y[train_index]), list(data_y[test_index])
     lr.fit(X_train, y_train)
-    prediction = lr.predict(X_test)
+    prediction = list(lr.predict(X_test))
+    predictions += prediction
+    y_tests += y_test
     i = 0
-    while i < len(X_test):
+    while i < len(y_test):
         if prediction[i] != y_test[i]:
             if y_test[i] == 0:
                 e_b += 1
             else:
                 e_h += 1
         i += 1
-    f1_bots += f1_score(y_test, prediction, pos_label = 0)
-    f1_humans += f1_score(y_test, prediction, pos_label = 1)
-e_h /= len(n)
-e_b /= len(n)
-f1_bots /= len(n)
-f1_humans /= len(n)
-print("humans accuracy:\t", 1-e_h/y_test.count(1))
-print("bots accuracy:   \t", 1-e_b/y_test.count(0))
-print("f1 scores:\nhumans:\t%f\nbots:\t%f" % (f1_humans, f1_bots))
+f1_bots = f1_score(y_tests, predictions, pos_label = 0)
+f1_humans = f1_score(y_tests, predictions, pos_label = 1)
+conf_matrix = np.matrix(list(confusion_matrix(y_tests, predictions)))
+
+print("\naccuracy:\ntotal:\t%g%%" % round(score*100, 2))
+print("humans:\t%g%%" % round((1-e_h/y_tests.count(1))*100, 2))
+print("bots:\t%g%%" % round((1-e_h/y_tests.count(0))*100, 2))
+print("\nf1 scores:\nhumans:\t%g%%\nbots:\t%g%%" % (round(f1_humans*100, 2), round(f1_bots*100, 2)))
+print("\nconfusion matrix:\n", conf_matrix, "\n")
+
 
 """
 #number of iterations (6)
@@ -287,7 +284,7 @@ print("Classification accuracy (10 fold cross validation iterated %d times):" % 
 
 scores_all_numeric_features = 0
 for i in n:
-    scores_all_numeric_features += np.mean(cross_validation.cross_val_score(lr, dataset_X_all_numeric_features, dataset_Y, cv = kFold))
+    scores_all_numeric_features += np.mean(cross_validation.cross_val_score(lr, data_1, dataset_Y, cv = kFold))
 print("All numeric features: ", scores_all_numeric_features / len(n))
 
 scores_numberOfFollowings = 0
@@ -405,7 +402,7 @@ print("no ratio of urls over tweets: ", scores_no_ratio_urls_tweets / len(n))
 print("\n****************************************************\n")
 print("Coefficients: \n")
 
-lr.fit(dataset_X_all_numeric_features, dataset_Y)
+lr.fit(data_1, dataset_Y)
 coef = lr.coef_[0]
 print("Number of followings: ", coef[0])
 print("Number of followers: ", coef[1])
