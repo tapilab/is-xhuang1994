@@ -13,7 +13,7 @@ api = TwitterAPI(consumer_key, consumer_secret, access_token, access_token_secre
 print("Established Twitter connection.")
 
 
-user_tweets = api.request("statuses/user_timeline", user_id = '6301')
+user_tweets = api.request("statuses/user_timeline", '6301')
 s = [r for r in user_tweets]
 for a in s:
     print(a['text'])
