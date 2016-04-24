@@ -1,5 +1,6 @@
 import re
 from sklearn.linear_model import LogisticRegressionCV, LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn import cross_validation
 from sklearn import svm
 from sklearn.metrics import f1_score, confusion_matrix
@@ -171,7 +172,7 @@ kFold = KFold(n = len(data_1), n_folds = 10, shuffle = True)
 
 #Build the classifier and do classification based on: all numeric features & each numeric feature
 lr = LogisticRegression()
-
+rf = RandomForestClassifier(criterion = 'entropy')
 """
 #Randomly separate data into training (80%) and test (20%) sets
 #Call lr.fit() and lr.predict() and compare the prediction versus real classes
@@ -247,13 +248,13 @@ e_b = 0
 predictions = []
 y_tests = []
 conf_matrix = np.matrix([[0, 0], [0, 0]])
-score = np.mean(cross_validation.cross_val_score(lr, data_x, data_y, cv = kFold_1))
+score = np.mean(cross_validation.cross_val_score(rf, data_x, data_y, cv = kFold_1))
 for train_index, test_index in kFold_1:
     data_x, data_y = np.array(data_x), np.array(data_y)
     X_train, X_test = list(data_x[train_index]), list(data_x[test_index])
     y_train, y_test = list(data_y[train_index]), list(data_y[test_index])
-    lr.fit(X_train, y_train)
-    prediction = list(lr.predict(X_test))
+    rf.fit(X_train, y_train)
+    prediction = list(rf.predict(X_test))
     predictions += prediction
     y_tests += y_test
     i = 0
@@ -269,8 +270,8 @@ f1_humans = f1_score(y_tests, predictions, pos_label = 1)
 conf_matrix = np.matrix(list(confusion_matrix(y_tests, predictions)))
 
 print("\naccuracy:\ntotal:\t%g%%" % round(score*100, 2))
-print("humans:\t%g%%" % round((1-e_h/y_tests.count(1))*100, 2))
-print("bots:\t%g%%" % round((1-e_h/y_tests.count(0))*100, 2))
+print("humans:\t%g%%" % round((1 - e_h/y_tests.count(1))*100, 2))
+print("bots:\t%g%%" % round((1 - e_b/y_tests.count(0))*100, 2))
 print("\nf1 scores:\nhumans:\t%g%%\nbots:\t%g%%" % (round(f1_humans*100, 2), round(f1_bots*100, 2)))
 print("\nconfusion matrix:\n", conf_matrix, "\n")
 
