@@ -21,6 +21,7 @@ reader_1 = open("polluters.txt", 'r')
 for line in reader_1:
     tokens = [float(r) for r in re.split("[\t\n]", line)[:23]]
     polluters.append(tokens)
+reader_1.close()
 print("data read from polluters.txt")
     
 legitimate_users = []
@@ -28,6 +29,7 @@ reader_2 = open("legitimate_users.txt", 'r')
 for line in reader_2:
     tokens = [float(r) for r in re.split("[\t\n]", line)[:23]]
     legitimate_users.append(tokens)
+reader_2.close()
 print("data read from legitimate_users.txt")
 
 #some index numbers of specific information for future use
