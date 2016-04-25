@@ -9,3 +9,5 @@
 social_honeypot_icwsm_2011/
 urls/
 *.txt
+*.ini
+*.cfg

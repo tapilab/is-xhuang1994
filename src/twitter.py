@@ -4,15 +4,19 @@ import json
 import re
 import urllib.parse
 from TwitterAPI import TwitterError
+import ConfigParser
 
 
-consumer_key = "639XljWu0rfTyCQ3xjuaFdsxZ"
-consumer_secret = "GP1dhzQDz6zS7XG2isBqyMQhFfymSbIO1JVvfELptG2viwxMFl"
-access_token = "2811894554-16Gded9BKwjA1CbFDcl76K95aQiJp6t6uHSmrmj"
-access_token_secret = "hFlfZ30Po4j4is6vNKy2lr6nlW1W0ZRfv75s6i4HegYR3"
+config = ConfigParser.ConfigParser()
+config.read("twitter.cfg")
+consumer_key = config.get('twitter', 'consumer_key')
+consumer_secret = config.get('twitter', 'consumer_secret')
+access_token = config.get('twitter', 'access_token')
+access_token_secret = config.get('twitter', 'access_token_secret')
 
 api = TwitterAPI(consumer_key, consumer_secret, access_token, access_token_secret)
 print("Established Twitter connection.")
+
 
 """
 #This is correct!!!
