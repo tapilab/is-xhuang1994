@@ -12,6 +12,7 @@ Develop a method to distinguish between humans and bots based on the data availa
 ## Related work
 
 On this topic several papers are found that uses the same method: find and collect numeric features of each user, and feed the data to a classification algorithm. Highest classfication accuracy result have been reported is around 99%.  
+
 Related papers:  
 Who is Tweeting on Twitter: Human, Bot, or Cyborg?  
 Detecting and Analyzing Automated Activity on Twitter  
