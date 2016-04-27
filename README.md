@@ -54,6 +54,7 @@ I collect all the data mentioned above for every user, and feed the data to a cl
 ## Results
 
 Here is a screenshot of accuracy results:
+
 ![Image](../master/src/graphs/Result.png?raw=true)
 
 Figure 5: Results for classification
