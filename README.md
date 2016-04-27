@@ -39,7 +39,7 @@ Figure 1: Bots overlapping (# followers vs. # followings graph. Blue points are 
 Figure 2: Humans overlapping
 ![Image](../master/src/graphs/graph-zoomed-in.png?raw=true)
 
-Figure 3: Figure 1 Zoomed in
+Figure 3: Figure 2 Zoomed in
 ![Image](../master/src/graphs/graph-clustered.png?raw=true)
 
 Figure 4: Clustering users
