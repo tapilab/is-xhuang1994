@@ -49,7 +49,7 @@ Besides, length of screen name was also used as a feature in the beginning, but 
 
 ## Methods
 
-I collect all the data mentioned above for every user, and feed the data to a classifier (random forest is used now), and do a 10-fold cross validation to see the results (total accuracy, respective accuracy for humans and bots, f1 socres for humans and bots, and confusion matrix)
+I collect all the data mentioned above for every user, scale each feature by its maximum value, and feed the data to a classifier (random forest is used now), and do a 10-fold cross validation to see the results (total accuracy, respective accuracy for humans and bots, f1 socres for humans and bots, and confusion matrix)
 
 ## Results
 
