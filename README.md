@@ -32,12 +32,16 @@ For each user, I have these data fed to classifier:
 In addition, I plotted a graph of # followers vs. # followings and found an interesting distribution patter of the users. Based on the graph, I divided the users into 3 bins, with a few marked as outliers (See Figure 1-4). And for each user, there are 3 more features each is a 0 or 1 that represents which bin it belongs to.
 
 ![Image](../master/src/graphs/graph-bots-overlapping.png?raw=true)
+
 Figure 1: Bots overlapping (# followers vs. # followings graph. Blue points are bots and green points are humans)
 ![Image](../master/src/graphs/graph-humans-overlapping.png?raw=true)
+
 Figure 2: Humans overlapping
 ![Image](../master/src/graphs/graph-zoomed-in.png?raw=true)
+
 Figure 3: Figure 1 Zoomed in
 ![Image](../master/src/graphs/graph-clustered.png?raw=true)
+
 Figure 4: Clustering users
 
 Besides, length of screen name was also used as a feature in the beginning, but it was found to have a negative effect on the accuracy results and was removed. 
@@ -51,6 +55,7 @@ I collect all the data mentioned above for every user, and feed the data to a cl
 
 Here is a screenshot of accuracy results:
 ![Image](../master/src/graphs/Result.png?raw=true)
+
 Figure 5: Results for classification
 
 
