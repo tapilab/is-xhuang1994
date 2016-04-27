@@ -174,7 +174,7 @@ kFold = KFold(n = len(data_1), n_folds = 10, shuffle = True)
 
 #Build the classifier and do classification based on: all numeric features & each numeric feature
 lr = LogisticRegression()
-rf = RandomForestClassifier(criterion = 'entropy')
+rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50)
 """
 #Randomly separate data into training (80%) and test (20%) sets
 #Call lr.fit() and lr.predict() and compare the prediction versus real classes
