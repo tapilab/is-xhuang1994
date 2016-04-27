@@ -3,13 +3,11 @@
 
 Develop a method to distinguish between humans and bots based on the data available.
 
-
 ## Research questions
 
 1. What kind of data should I use
 2. What algorithm should I use for classification
 3. How do I evaluate the classification model
-
 
 ## Related work
 
@@ -21,13 +19,14 @@ Detecting Spammers on Twitter
 Uncovering Social Spammers: Social Honeypots + Machine Learning
 A Long-Term Study of Content Polluters on Twitter
 
-
 ## Data
 
 The data I'm using are extracted from honeypot dataset.
 
 For each user, I have these data fed to classifier:
 [# followings, # followers, # tweets, length of description in user profile, standard deviation of # follwings, standard deviation of differences of # follwings (the change rate of # followings), lag1 autocorrelation of # follwings (the change rate of # followings), # tweets posted on each weekday, ratio of tweets posted on each weekday, ratio of urls in tweets, ratio of unique urls in tweets, ratio of @'s in tweets, ratio of unique @'s in tweets, ratio of hashtags in tweets, ratio of unique hashtags in tweets]
+
+Besides, length of screen name was also used as a feature in the beginning, but it was found to have a negative effect on the accuracy results and was removed. 
 
 In addition, I plotted a graph of # followers vs. # followings and found an interesting distribution patter of the users. Based on the graph, I divided the users into 3 bins, with a few marked as outliers (See Figure 1-4). And for each user, there are 3 more features each is a 0 or 1 that represents which bin it belongs to.
 
@@ -44,9 +43,6 @@ Figure 3: Figure 2 Zoomed in
 
 Figure 4: Clustering users
 
-Besides, length of screen name was also used as a feature in the beginning, but it was found to have a negative effect on the accuracy results and was removed. 
-
-
 ## Methods
 
 I collect all the data mentioned above for every user, scale each feature by its maximum value, and feed the data to a classifier (random forest is used now), and do a 10-fold cross validation to see the results (total accuracy, respective accuracy for humans and bots, f1 socres for humans and bots, and confusion matrix)
@@ -58,7 +54,6 @@ Here is a screenshot of accuracy results:
 ![Image](../master/src/graphs/Result.png?raw=true)
 
 Figure 5: Results for classification
-
 
 ## Conclusions / Future Work
 
