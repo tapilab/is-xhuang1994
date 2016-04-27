@@ -1,41 +1,59 @@
-# ms-project-template
-A template for students doing M.S. or undergraduate independent studies/theses.
-
-See instructions here: [Instructions.md](Instructions.md)
-
-This README.md file should summarize your project. Think of it as the short version of your project report.
 
 ## Problem
 
-Here is the problem your are going to solve.
+Develop a method to distinguish between humans and bots based on the data available.
+
 
 ## Research questions
 
-Here are the core questions / subproblems you will address:
+1. What kind of data should I use
+2. What algorithm should I use for classification
+3. How do I evaluate the classification model
 
-1. ...
-2. ...
-3. ...
 
 ## Related work
 
-Here's how other people have tried to solve this problem, with a few links/citations. 
+On this topic several papers are found that uses the same method: find and collect numeric features of each user, and feed the data to a classification algorithm. Highest classfication accuracy result have been reported is around 99%.
+Related papers:
+Who is Tweeting on Twitter: Human, Bot, or Cyborg?
+Detecting and Analyzing Automated Activity on Twitter
+Detecting Spammers on Twitter
+Uncovering Social Spammers: Social Honeypots + Machine Learning
+A Long-Term Study of Content Polluters on Twitter
+
 
 ## Data
 
-Here is a description of the data you collected.
+The data I'm using are extracted from honeypot dataset.
 
-Here is an example data record.
+For each user, I have these data fed to classifier:
+[# followings, # followers, # tweets, length of description in user profile, standard deviation of # follwings, standard deviation of differences of # follwings (the change rate of # followings), lag1 autocorrelation of # follwings (the change rate of # followings), # tweets posted on each weekday, ratio of tweets posted on each weekday, ratio of urls in tweets, ratio of unique urls in tweets, ratio of @'s in tweets, ratio of unique @'s in tweets, ratio of hashtags in tweets, ratio of unique hashtags in tweets]
+
+In addition, I plotted a graph of # followings vs. # followers and found an interesting distribution patter of the users. Based on the graph, I divided the users into 3 bins, with a few marked as outliers (See images below). And for each user, there are 3 more features each is a 0 or 1 that represents which bin it belongs to.
+
+
+
+Besides, length of screen name was also used as a feature in the beginning, but it was found to have a negative effect on the accuracy results and was removed. 
+
 
 ## Methods
 
-Here is an outline of your approach.
+I collect all the data mentioned above for every user, and feed the data to a classifier (random forest is used now), and do a 10-fold cross validation to see the results (total accuracy, respective accuracy for humans and bots, f1 socres for humans and bots, and confusion matrix)
 
 ## Results
 
-Here is a summary of the main results.
+Here is a screenshot of accuracy results:
+
+
 
 ## Conclusions / Future Work
 
-Here's the main conclusions and a list of directions for improvement.
+The results show a high classification accuracy -- 94% in total -- while the highest accuracy reported in the papers is over 99%. There could be some criterions in collecting the bot and human users that are not mentioned in the papers. I have several plans for Summer vacation and Fall semester:
+
+1. Collect domain names of urls collected from recent tweets of each user I have. Find a way to rank the domains and adding this as an additional feature to my current model and test for accuracy. This can be achieved in doing work 2.
+2. Recollect all the features needed for each user. Put data into my current model and test for accuracy (also need to replot the # followings vs. # followers graph and see the users distribution patterns)
+3. Find more users (say, roughly 10000) in addition to the current dataset and try best to balance bots and humas. In order to balance, I need to do some analysis on the followers&followings of the users I have in the dataset (e.g., a user following a lot of bots is likely to be a bot). The lists of followers and followings of each user will be collected in doing work 2. Only active (and influential, maybe) users should be collected since inactive users could be very hard to identify.
+4. Manually identify some of the new users (roughly 1000 during Summer vacation).
+4. Collect the number of followings (and followers, perhaps) of each user every 3/4 days for calculating the change rate of # followings. This is a very strong feature for classification.
+5. See if I can improve the classifier, e.g., change parameters, and apply standard boosting and bagging mentioned in the papers.
 
