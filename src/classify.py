@@ -17,17 +17,17 @@ import matplotlib.pyplot as plt
 
 #Read data from polluters.txt and legitimate_users.txt
 polluters = []
-reader_1 = open("polluters.txt", 'r')
+reader_1 = open("bots.txt", 'r')
 for line in reader_1:
-    tokens = [float(r) for r in re.split("[\t\n]", line)[:23]]
+    tokens = [float(r) for r in re.split("[\t\n]", line) if r != ""]
     polluters.append(tokens)
 reader_1.close()
 print("data read from polluters.txt")
     
 legitimate_users = []
-reader_2 = open("legitimate_users.txt", 'r')
+reader_2 = open("humans.txt", 'r')
 for line in reader_2:
-    tokens = [float(r) for r in re.split("[\t\n]", line)[:23]]
+    tokens = [float(r) for r in re.split("[\t\n]", line) if r != ""]
     legitimate_users.append(tokens)
 reader_2.close()
 print("data read from legitimate_users.txt")
@@ -200,15 +200,6 @@ print("# total instances: ", len(X_test))
 
 #Separate data_1 into bins by #followings and try classification
 #Drop some outliers based on the #followers / #followings distribution graph
-i = 0
-while i < len(data_1):
-    data_1[i] = data_1[i][:4] + data_1[i][5:]
-    if data_1[i][1] == 0:
-        data_1[i].append(0)
-    else:
-        data_1[i].append(data_1[i][0]/data_1[i][1])
-    i += 1
-
 data_x = []
 data_y = []
 outliers_x = []
