@@ -52,7 +52,7 @@ Figure 5: Results for classification
 
 ## Conclusions / Future Work
 
-The results show a high classification accuracy -- 94% in total -- while the highest accuracy reported in the papers is over 99%. There could be some criterions in collecting the bot and human users that are not mentioned in the papers. I have several plans for Summer vacation and Fall semester:
+The results show a high classification accuracy -- 95% in total -- while the highest accuracy reported in the papers is over 99%. There could be some criterions in collecting the bot and human users that are not mentioned in the papers. I have several plans for Summer vacation and Fall semester:
 
 1. Collect domain names of urls collected from recent tweets of each user I have. Find a way to rank the domains and adding this as an additional feature to my current model and test for accuracy. This can be achieved in doing work 2.
 2. Recollect all the features needed for each user. Put data into my current model and test for accuracy (also need to replot the # followings vs. # followers graph and see the users distribution patterns)
