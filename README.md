@@ -60,4 +60,4 @@ The results show a high classification accuracy -- 94% in total -- while the hig
 4. Manually identify some of the new users (roughly 1000 during Summer vacation).
 4. Collect the number of followings (and followers, perhaps) of each user every 3/4 days for calculating the change rate of # followings. This is a very strong feature for classification.
 5. See if I can improve the classifier, e.g., change parameters, and apply standard boosting and bagging mentioned in the papers.
-
+6. With Pearson's value, I might be able to see which two features have some relationship.
