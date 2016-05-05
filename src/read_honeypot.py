@@ -9,30 +9,30 @@ import os
 #This file reads data from honeypot dataset, process and write the data into bots.txt and humans.txt
 
 num_decimal = 4
-#reading basic info for each user into container
+#Reading basic info for each user into container
 def read_info(filename, container):
     with open(filename, 'r') as f:
         for line in f:
             tokens = re.split("[\t\n]", line)
-            #parse strings to numbers, take out the dates
+            #Parse strings to numbers, take out the dates
             parsed_tokens = [tokens[0]] + [int(r) for r in tokens[3:8]]
-            #remove length of screen name from data, which is found to have negative effect on classification accuracy
+            #Remove length of screen name from data, which is found to have negative effect on classification accuracy
             parsed_tokens = parsed_tokens[:3] + parsed_tokens[4:]
-            #add # followings / # followers
+            #Add # followings / # followers
             parsed_tokens.append(round((parsed_tokens[1]/parsed_tokens[2] if parsed_tokens[2] else 0), num_decimal))
             container.append(parsed_tokens)
 
-#reading data of a series of # followings for each user
+#Reading data of a series of # followings for each user
 def read_followings(filename, container):
     with open(filename, 'r') as f:
         i = 0
         for line in f:
             tokens = [int(r) for r in re.split("[\D]", line) if r != ""][1:]
-            #calculate standard deviation of the data
+            #Calculate standard deviation of the data
             sd = round(stat.pstdev(tokens), num_decimal)
-            #calcalate standard deviation of differences of the data
+            #Calcalate standard deviation of differences of the data
             sdd = round(stat.pstdev(list(np.array(tokens[1:]) - np.array(tokens[:-1]))), num_decimal)
-            #calculate lag one autocorrelation of the data
+            #Calculate lag one autocorrelation of the data
             avg = np.mean(tokens)
             numerator = sum((np.array(tokens[1:]) - avg) * (np.array(tokens[:-1]) - avg))
             denominator = sum((np.array(tokens) - avg) ** 2)
@@ -40,20 +40,20 @@ def read_followings(filename, container):
             container[i] += [sd, sdd, lac]
             i += 1
 
-#reading tweets posted by each user
+#Reading tweets posted by each user
 def read_tweets(filename, container):
     curr_userID = ""
     curr_tweet_count = 0
-    #features contained in tweets (current user)
+    #Features contained in tweets (current user)
     urls, _at_s, hashtags, weekday_post = [], [], [], []
-    #index for container
+    #Index for container
     i = 0
     with open(filename, encoding = 'utf-8', mode = 'r') as f:
         while True:
             line = f.readline()
             tokens = [r for r in re.split("[\t\n]", line) if r != ""]
             if not line or tokens[0] != curr_userID and curr_userID:
-                #new user found / eof reached
+                #New user found / eof reached
                 num_tweets_weekday = [weekday_post.count(i) for i in range(7)]
                 ratio_tweets_weekday = [round(x, num_decimal) for x in list(np.array(num_tweets_weekday) / len(weekday_post))]
                 curr_user = num_tweets_weekday + ratio_tweets_weekday
@@ -65,10 +65,10 @@ def read_tweets(filename, container):
                 container[i] += curr_user
                 if not line:
                     break
-                #reset current user info containers
+                #Reset current user info containers
                 curr_tweet_count = 0
                 urls, _at_s, hashtags, weekday_post = [], [], [], []
-            #post date of the tweet
+            #Post date of the tweet
             curr_userID = tokens[0]
             curr_tweet_count += 1
             urls += re.findall('http[\S]+', tokens[2])
@@ -78,7 +78,7 @@ def read_tweets(filename, container):
             post_date = dt.date(int(post_date[0]), int(post_date[1]), int(post_date[2]))
             weekday_post.append(post_date.weekday())
 
-#deleting ambiguous users who are in both polluters and legitimate users (44 found)
+#Deleting ambiguous users who are in both polluters and legitimate users (44 found)
 #The user ids are found in ascending order
 def del_amb(bots, humans):
     i, j, count = (0, 0, 0)
@@ -93,13 +93,13 @@ def del_amb(bots, humans):
             j += 1
     return count
 
-#add 0's for missing values (some users have no tweets recorded)
+#Add 0's for missing values (some users have no tweets recorded)
 def add0(container):
     length = 29
     for i in range(len(container)):
         container[i] += [0]*(length - len(container[i]))
 
-#write data into text files
+#Write data into text files
 def write_user(filename, container):
     with open(filename, 'w') as f:
         for inst in container:
@@ -121,14 +121,17 @@ def main():
     print("data read from social_honeypot_icwsm_2011\content_polluters.txt")
     read_info('social_honeypot_icwsm_2011\legitimate_users.txt', humans)
     print("data read from social_honeypot_icwsm_2011\legitimate_users.txt")
+    
     read_followings('social_honeypot_icwsm_2011\content_polluters_followings.txt', bots)
     print("data read from social_honeypot_icwsm_2011\content_polluters_followings.txt")
     read_followings('social_honeypot_icwsm_2011\legitimate_users_followings.txt', humans)
     print("data read from social_honeypot_icwsm_2011\legitimate_users_followings.txt")
+    
     read_tweets('social_honeypot_icwsm_2011\content_polluters_tweets.txt', bots)
     print("data read from social_honeypot_icwsm_2011\content_polluters_tweets.txt")
     read_tweets('social_honeypot_icwsm_2011\legitimate_users_tweets.txt', humans)
     print("data read from social_honeypot_icwsm_2011\legitimate_users_tweets.txt")
+    
     count = del_amb(bots, humans)
     print("%d mislabeled users deleted!" % count)
     add0(bots)
