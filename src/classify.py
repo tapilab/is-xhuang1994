@@ -10,25 +10,28 @@ import numpy as np
 import csv
 from sklearn.cross_validation import train_test_split
 import matplotlib.pyplot as plt
+import os
+from pymongo import MongoClient
 
-#This file reads data from polluters.txt and legitimate_users.txt and classify the records
+#This file reads data from polluters.txt and legitimate_users.txt (old data) or from Mongodb (recent data) and classify the records
 
+"""
 #Read data from polluters.txt and legitimate_users.txt
 polluters = []
-reader_1 = open("bots.txt", 'r')
+reader_1 = open("old_data" + os.path.sep + "bots.txt", 'r')
 for line in reader_1:
     tokens = [float(r) for r in re.split("[\t\n]", line) if r != ""]
     polluters.append(tokens)
 reader_1.close()
-print("data read from polluters.txt")
-    
+print("data read from " + "old_data" + os.path.sep + "bots.txt")
+
 legitimate_users = []
-reader_2 = open("humans.txt", 'r')
+reader_2 = open("old_data" + os.path.sep + "humans.txt", 'r')
 for line in reader_2:
     tokens = [float(r) for r in re.split("[\t\n]", line) if r != ""]
     legitimate_users.append(tokens)
 reader_2.close()
-print("data read from legitimate_users.txt")
+print("data read from " + "old_data" + os.path.sep + "humans.txt")
 
 #some index numbers of specific information for future use
 userID = 0
@@ -52,8 +55,43 @@ ratio_at_tweets = 25
 ratio_unique_at_tweets = 26
 ratio_hashtags_tweets = 27
 ratio_unique_hashtags_tweets = 28
+"""
 
+#Read data from Mongodb
+mClient = MongoClient()
+db = mClient['new_data']
+weekdays = {'Mon': 0, 'Tue': 1, 'Wed': 2, 'Thu': 3, 'Fri': 4, 'Sta': 5, 'Sun': 6}
+bots_basic = db['a_bots'].find({'protected': False}, {'id': 1, 'screen_name': 1, 'followers_count': 1, 'friends_count': 1, 'description': 1, 'statuses_count': 1})
+bots_basic = [r for r in bots_basic]
+bots_timeline = db['a_bots_timeline'].find({})
+bots_timeline = [r for r in bots_timeline]
+bots_timeline_f = []
+for b in bots_timeline:
+    this_bot = {'id': b['id'], 'num_weekday': [0, 0, 0, 0, 0, 0, 0], 'ratio_weekday': [0, 0, 0, 0, 0, 0, 0], 'ratio_urls': [0, 0], 'ratio_at': [0, 0], 'ratio_hashtags': [0, 0]}
+    urls, mentions, hashtags = [], [], []
+    for tweet in b['timeline']:
+        day = weekdays[tweet['created_at'][0:3]]
+        this_bot['num_weekday'][day] += 1
+        mentions.append([r['id_str'] for r in tweet['user_mentions']])
+        urls.append(tweet['urls'])
+        hashtags.append([r['text'] for r in tweet['hashtags']])
+    if b['timeline'] != []:
+        this_bot['ratio_weekday'] = list(np.array(this_bot['num_weekday']) / np.sum(this_bot['num_weekday']))
+        this_bot['ratio_urls'] = [len(urls)/len(b['timeline']), len(set(urls))//len(b['timeline'])]
+        this_bot['ratio_at'] = [len(mentions)/len(b['timeline']), len(set(mentions))//len(b['timeline'])]
+        this_bot['ratio_hashtags'] = [len(hashtags)/len(b['timeline']), len(set(hashtags))//len(b['timeline'])]
+    bots_timeline_f.append(this_bot)
+        
+    
+bots = [[r['id'], r['friends_count'], r['followers_count'], r['statuses_count'], len(r['screen_name']), len(r['description'])] for r in bots_basic]
+humans_basic = db['a_humans'].find({'protected': False}, {'id': 1, 'screen_name': 1, 'followers_count': 1, 'friends_count': 1, 'description': 1, 'statuses_count': 1})
+humans_basic = [r for r in humans_basic]
+humans = [[r['id'], r['friends_count'], r['followers_count'], r['statuses_count'], len(r['screen_name']), len(r['description'])] for r in humans_basic]
 
+dataset_X = [r[1:] for r in bots + humans]
+dataset_Y = [0] * len(bots) + [1] * len(humans)
+
+"""
 #Combine 2 datasets for classification, dataset_Y is the target list
 #the data will be shuffled before classify
 dataset_X = [r[1:] for r in polluters + legitimate_users]
@@ -70,18 +108,18 @@ i = 0
 while i < len(dataset_X):
     if dataset_X[i][0] < 500:
         if dataset_X[i][1] > 1500:
-            data_x.append(dataset_X[i] + [1, 0, 0])
+            data_x.append(dataset_X[i])# + [1, 0, 0])
             data_y.append(dataset_Y[i])
         else:
-            data_x.append(dataset_X[i] + [0, 1, 0])
+            data_x.append(dataset_X[i])# + [0, 1, 0])
             data_y.append(dataset_Y[i])
     elif dataset_X[i][1] < dataset_X[i][0]*0.9+10000:
         #The #followers/#followings ratio is below the generalized line
         if dataset_X[i][0] < 2005:
-            data_x.append(dataset_X[i] + [0, 1, 0])
+            data_x.append(dataset_X[i])# + [0, 1, 0])
             data_y.append(dataset_Y[i])
         else:
-            data_x.append(dataset_X[i] + [0, 0, 1])
+            data_x.append(dataset_X[i])# + [0, 0, 1])
             data_y.append(dataset_Y[i])
     else:
         outliers_x.append(dataset_X[i])
@@ -90,7 +128,7 @@ while i < len(dataset_X):
 dataset_X = data_x
 dataset_Y = data_y
 print("%d outliers are dropped" % len(outliers_x))
-
+"""
 
 #Scale each feature of the data with its maximum value
 #This is found to give a better result than no scale or scale with both maximum and standard deviation

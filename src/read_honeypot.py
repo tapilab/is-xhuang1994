@@ -101,7 +101,7 @@ def add0(container):
 
 #Write data into text files
 def write_user(filename, container):
-    with open(filename, 'w') as f:
+    with open("old_data" + os.path.sep + filename, 'w') as f:
         for inst in container:
             f.write("\t".join([str(x) for x in inst]))
             f.write("\n")
@@ -139,9 +139,9 @@ def main():
     print("added 0's for missing values")
     
     write_user('bots.txt', bots)
-    print("data written to bots.txt")
+    print("data written to old_data/bots.txt")
     write_user('humans.txt', humans)
-    print("data written to humans.txt")
+    print("data written to old_data/humans.txt")
 
 
 if __name__ == '__main__':

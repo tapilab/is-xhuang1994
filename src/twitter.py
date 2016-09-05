@@ -5,6 +5,7 @@ import re
 import urllib.parse
 from TwitterAPI import TwitterError
 import configparser
+import math
 
 
 config = configparser.ConfigParser()
@@ -15,75 +16,78 @@ access_token = config.get('twitter', 'access_token')
 access_token_secret = config.get('twitter', 'access_token_secret')
 
 api = TwitterAPI(consumer_key, consumer_secret, access_token, access_token_secret)
-print("Established Twitter connection.")
-
+print("Twitter connection ready.")
 
 """
 #This is correct!!!
-try:
-    user_tweets = api.request("users/lookup", {'user_id': '5884032'})
-    user_tweets = [r for r in user_tweets]
-except TwitterError.TwitterRequestError as e:
-    print(dir(e))
-    print(type(e))
-    print(e.status_code)
-    print(e.__str__())
-
-#print(len(user_tweets))
-#url = user_tweets[len(user_tweets)-1]['text']
-#print(url)
+#try:
+users = api.request("users/lookup", {'user_id': "10193122"})
+users = [r for r in users]
+#except TwitterError.TwitterRequestError as e:
+    #print(dir(e))
+    #print(type(e))
+    #print(e.status_code)
+    #print(e.__str__())
+print(users)
+print(users[0]["id_str"])
+print(users[0]["protected"])
 """
 
-polluters = []
-freader_1 = open("polluters.txt", 'r')
+bots = []
+freader_1 = open("bots.txt", 'r')
 for line in freader_1:
     tokens = re.split("[\t\n]", line)[0]
-    polluters.append(tokens)
+    bots.append(tokens)
 freader_1.close()
-print("user ids read from polluters.txt")
+print("user ids read from bots.txt")
 
-legitimate_users = []
-freader_2 = open("legitimate_users.txt", 'r')
+humans = []
+freader_2 = open("humans.txt", 'r')
 for line in freader_2:
     tokens = re.split("[\t\n]", line)[0]
-    legitimate_users.append(tokens)
+    humans.append(tokens)
 freader_2.close()
-print("user ids read from legitimate_users.txt")
+print("user ids read from humans.txt")
 
 
-fwitter_0 = open('errors.txt', 'w')
-fwriter_1 = open('domains_polluters.txt', encoding = 'utf-8', mode = 'w')
-for user in polluters:
+active_users = []
+protected_users = []
+for i in range(math.ceil(len(bots)/50)):
     while True:
         try:
-            user_tweets = api.request("statuses/user_timeline", {'user_id': user, 'count': 200})
-            user_tweets = [r for r in user_tweets]
+            users = api.request("users/lookup", {'user_id': bots[i*50:i*50+50]})
+            users = [r for r in users]
             break
         except TwitterError.TwitterRequestError as tre:
             if tre.status_code == 429:
+                print(tre.__str__())
+                print("current i = ", i)
                 print("z z z ...")
                 time.sleep(60)
                 continue
             else:
                 print("Unexpected error raised")
-                s = user + '\n' + tre.__str__()
-                fwitter_0.write(s)
+                s = tre.__str__()
+                print(s, "\n\n")
+                print("current i = ", i)
                 break
         except Exception as e:
             print("Unexpected error raised")
-            s = user + '\n' + tre.__str__()
-            fwitter_0.write(s)
+            s = e.__str__()
+            print(s, "\n\n")
+            print("current i = ", i)
             break
-    s = '\n' + user + '\n'
-    fwriter_1.write(s)
-    for tweet in user_tweets:
-        urls = tweet['entities']['urls']
-        for url in urls:
-            url = url['expanded_url']
-            parsed_url = urllib.parse.urlparse(url)
-            domain = '{url.scheme}://{url.netloc}/'.format(url=parsed_url)
-            fwriter_1.write(domain + '\n')
-            fwriter_1.flush()
-fwriter_1.close()
-fwitter_0.close()
+    for user in users:
+        active_users.append(user["id_str"])
+        if user["protected"]:
+            protected_users.append(user["id_str"])
 
+inactive_users = [i for i in bots if not i in active_users]
+with open("inactive_bots.txt", 'w') as f:
+    for u in inactive_users:
+        s = u + "\n"
+        f.write(s)
+with open("protected_bots.txt", 'w') as f:
+    for u in protected_users:
+        s = u + "\n"
+        f.write(s)
