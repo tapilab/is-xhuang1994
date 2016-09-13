@@ -43,6 +43,9 @@ lengthOfDescriptionInUserProfile = 5
 standard_deviation_follwings = 6
 standard_deviation_diff_follwings = 7
 lag1_autocorrelation = 8
+***
+geo_enabled
+***
 number_tweets_Monday = 9
 #omited index numbers for number of tweets posted each day Tuesday - Saturday
 number_tweets_Sunday = 15
@@ -55,41 +58,58 @@ ratio_at_tweets = 25
 ratio_unique_at_tweets = 26
 ratio_hashtags_tweets = 27
 ratio_unique_hashtags_tweets = 28
+***
+avg_number_of_rts
+ratio_tweets_ending_with_punctuation_link_hashtag
+num_sources
+coordinated
+ratio rt?
+ratio reply?
+tweet syntax
+***
 """
 
 #Read data from Mongodb
 mClient = MongoClient()
-db = mClient['new_data']
-weekdays = {'Mon': 0, 'Tue': 1, 'Wed': 2, 'Thu': 3, 'Fri': 4, 'Sta': 5, 'Sun': 6}
-bots_basic = db['a_bots'].find({'protected': False}, {'id': 1, 'screen_name': 1, 'followers_count': 1, 'friends_count': 1, 'description': 1, 'statuses_count': 1})
-bots_basic = [r for r in bots_basic]
-bots_timeline = db['a_bots_timeline'].find({})
-bots_timeline = [r for r in bots_timeline]
-bots_timeline_f = []
-for b in bots_timeline:
-    this_bot = {'id': b['id'], 'num_weekday': [0, 0, 0, 0, 0, 0, 0], 'ratio_weekday': [0, 0, 0, 0, 0, 0, 0], 'ratio_urls': [0, 0], 'ratio_at': [0, 0], 'ratio_hashtags': [0, 0]}
-    urls, mentions, hashtags = [], [], []
-    for tweet in b['timeline']:
-        day = weekdays[tweet['created_at'][0:3]]
-        this_bot['num_weekday'][day] += 1
-        mentions.append([r['id_str'] for r in tweet['user_mentions']])
-        urls.append(tweet['urls'])
-        hashtags.append([r['text'] for r in tweet['hashtags']])
-    if b['timeline'] != []:
-        this_bot['ratio_weekday'] = list(np.array(this_bot['num_weekday']) / np.sum(this_bot['num_weekday']))
-        this_bot['ratio_urls'] = [len(urls)/len(b['timeline']), len(set(urls))//len(b['timeline'])]
-        this_bot['ratio_at'] = [len(mentions)/len(b['timeline']), len(set(mentions))//len(b['timeline'])]
-        this_bot['ratio_hashtags'] = [len(hashtags)/len(b['timeline']), len(set(hashtags))//len(b['timeline'])]
-    bots_timeline_f.append(this_bot)
-        
-    
-bots = [[r['id'], r['friends_count'], r['followers_count'], r['statuses_count'], len(r['screen_name']), len(r['description'])] for r in bots_basic]
-humans_basic = db['a_humans'].find({'protected': False}, {'id': 1, 'screen_name': 1, 'followers_count': 1, 'friends_count': 1, 'description': 1, 'statuses_count': 1})
-humans_basic = [r for r in humans_basic]
-humans = [[r['id'], r['friends_count'], r['followers_count'], r['statuses_count'], len(r['screen_name']), len(r['description'])] for r in humans_basic]
+def get_data(ids, collection):
+    users = []
+    for id in ids:
+        user = list(collection.find({'id': id}))[0]
+        basic_data = [user['id'], len(user['name']), len(user['screen_name']), user['friends_count'], user['followers_count'], user['friends_count']/user['followers_count'] if user['followers_count'] != 0 else 0, user['statuses_count'], len(user['description']), \
+                1 if user['goe_enabled'] == True else 0]
+        timeline_data = []
+        posts = [r for r in user['timeline'] if r['is_rt'] == False and r['is_reply'] == False]
+        urls, mentions, hashtags = [], [], []
+        for d in list(range(7)):
+            timeline_data.append(len([r for r in posts if r['weekday'] == d]))
+        for d in list(range(7)):
+            timeline_data.append(len([r for r in posts if r['weekday'] == d]) / (len(posts) if len(posts) != 0 else 1))
+        for post in posts:
+            urls += post['urls']
+            mentions += post['mentions']
+            hashtags += post['hashtags']
+        timeline_data += [len(urls)/(len(posts) if len(posts) != 0 else 1), len(set(urls))/(len(posts) if len(posts) != 0 else 1), len(mentions)/(len(posts) if len(posts) != 0 else 1), len(set(mentions))/(len(posts) if len(posts) != 0 else 1), \
+                          len(hashtags)/(len(posts) if len(posts) != 0 else 1), len(set(hashtags))/(len(posts) if len(posts) != 0 else 1)]
+        avg_rts = sum([r['rt_count'] for r in user['timeline']]) / len(user['timeline'])
+        end_with_phu = len([r for r in user['timeline'] if r['is_rt'] == False and r['is_reply'] == False and r['end_with_phu'] == True]) / len(user['timeline'])
+        num_sources = len(set([r['source'] for r in user['timeline']]))
+        ratio_coordinate = len([r for r in posts if r['coordinated'] == True]) / (len(posts) if len(posts) != 0 else 1)
+        ratio_rt = len([r for r in user['timeline'] if r['is_rt'] == True]) / len(user['timeline'])
+        ratio_reply = len([r for r in user['timeline'] if r['is_reply'] == True]) / len(user['timeline'])
+        timeline_data += [avg_rts, end_with_phu, num_sources, ratio_coordinate, ratio_rt, ratio_reply]
+        users.append(basic_data + timeline_data)
+    return users
+bots = mClient['new_data']['bots']
+humans = mClient['new_data']['humans']
+u_bots_id = [r['id'] for r in bots.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}}, {'id': 1})]
+u_bots = get_data(u_bots_id, bots)
+u_humans_id = [r['id'] for r in humans.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}}, {'id': 1})]
+u_humans = get_data(u_humans_id, humans)
 
-dataset_X = [r[1:] for r in bots + humans]
-dataset_Y = [0] * len(bots) + [1] * len(humans)
+mClient.close()
+
+dataset_X = [r[1:] for r in u_bots + u_humans]
+dataset_Y = [0] * len(u_bots) + [1] * len(u_humans)
 
 """
 #Combine 2 datasets for classification, dataset_Y is the target list

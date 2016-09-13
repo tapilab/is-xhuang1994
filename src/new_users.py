@@ -1,4 +1,7 @@
+from twitter import *
+import oauth2
 from TwitterAPI import TwitterAPI, TwitterError
+import json
 from pymongo import MongoClient
 import configparser
 import math
@@ -6,43 +9,41 @@ import os
 import re
 import time
 
-#This file reads bot-users from Mongodb, analyze their followers and friends, and find new potential bots on Twitter
+#This file uses Streaming API to find new users on Twitter
 
 
-#Read users from mongodb and return users based on some threshold
-def read_users(mongodb, threshold):
-    db = mongodb['new_data']
-    unprotected_bots = [r['id'] for r in db['a_bots'].find({'protected': False})]
-    pass
-
-
-#Get follower&friend lists from Twitter api
-def get_relation(u_bots, twitterapi):
-    #Every user id is mapped with 2 lists -- first is friends list, second is followers list
-    relation = {r:[[], []] for r in u_bots}
-    for id in u_bots:
-        while True:
-            try:
-                friends = [r['ids'] for r in api.request("friends/ids", {'user_id': id})][0]
-                followers = [r['ids'] for r in api.request("followers/ids", {'user_id': id})][0]
-                relation[id] = [friends, followers]
-                break
-            #Error code 429 means the requests have reached the rate limit
-            except TwitterError.TwitterRequestError as tre:
-                if tre.status_code == 429:
-                    print("z z z ...")
-                    time.sleep(60)
-                    continue
-                else:
-                    print("Unexpected error raised")
-                    s = tre.__str__()
-                    print(s, "\n")
-                    continue
-            except Exception as e:
-                print("Unexpected error raised")
-                s = e.__str__()
-                print(s, "\n")
-                continue
-    return relation
+def main():
+    config = configparser.ConfigParser()
+    config.read("twitter.cfg")
+    consumer_key1 = config.get('twitter', 'consumer_key')
+    consumer_secret1 = config.get('twitter', 'consumer_secret')
+    access_token1 = config.get('twitter', 'access_token')
+    access_token_secret1 = config.get('twitter', 'access_token_secret')
+    
+    oauth = OAuth(token = access_token1, token_secret = access_token_secret1, consumer_secret = consumer_secret1, consumer_key = consumer_key1)
     
     
+    t = Twitter(auth = oauth)
+    timeline = t.statuses.home_timeline()
+    print(timeline)
+    
+    
+    stream = TwitterStream(auth=oauth)
+    iterator = stream.statuses.sample()
+    for tweet in iterator:
+        #tweet = list(tweet)
+        print(tweet)
+        break
+    print(tweet)
+    
+    
+    api = TwitterAPI(consumer_key1, consumer_secret1, access_token1, access_token_secret1)
+    timeline = api.request("statuses/sample")
+    #timeline = api.request("statuses/user_timeline", {'id': '10836'})
+    timeline = list(timeline)
+    print(timeline)
+    
+    
+
+if __name__ == '__main__':
+    main()
