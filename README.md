@@ -22,7 +22,7 @@ A Long-Term Study of Content Polluters on Twitter
 
 ## Data
 
-The data I'm using are extracted from honeypot dataset.
+The data I'm using are extracted from honeypot dataset[1].
 
 For each user, I have these data fed to classifier:
 [# followings, # followers, # tweets, length of description in user profile, standard deviation of # follwings, standard deviation of differences of # follwings (the change rate of # followings), lag1 autocorrelation of # follwings (the change rate of # followings), # tweets posted on each weekday, ratio of tweets posted on each weekday, ratio of urls in tweets, ratio of unique urls in tweets, ratio of @'s in tweets, ratio of unique @'s in tweets, ratio of hashtags in tweets, ratio of unique hashtags in tweets]
@@ -62,3 +62,7 @@ The results show a high classification accuracy -- 94% in total -- while the hig
 5. See if I can improve the classifier, e.g., change parameters, and apply standard boosting and bagging mentioned in the papers.
 6. With Pearson's value, I might be able to see which two features have some relationship.
 7. Sending any request to Twitter API with a deactivated account or a suspended account both return a 404 error. To distinguish these two kinds of accounts, go to https://twitter.com/intent/user?user_id=[userid] with the userid. If the account has been deactivated by the user, it will say "Sorry, that page doesn’t exist!". If the account has been suspended, it will say "Account suspended". Since there are only user ids but screen names in the honeypot dataset, that's the only way I've found to identify if an account has been suspended. So I might use some techniques to get this information automatically (e.g., web crawling?).
+
+## References
+
+[1] K. Lee, B. Eo, and J. Caverlee. Seven Months with the Devils: A Long-Term Study of Content Polluters on Twitter. In Proceeding of the 5th International AAAI Conference on Weblogs and Social Media (ICWSM), Barcelona, July 2011. (Bibtex)
