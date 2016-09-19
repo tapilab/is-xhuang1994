@@ -66,12 +66,10 @@ The new result is noticeably lower than old result, which reflects the insuffici
 
 The results show a high classification accuracy -- 94% in total -- while the highest accuracy reported in the papers is over 99%. There could be some criterions in collecting the bot and human users that are not mentioned in the papers. I have several plans for Summer vacation and Fall semester:
 
-1. [Postponed] Collect domain names of urls collected from recent tweets of each user I have. Find a way to rank the domains and adding this as an additional feature to my current model and test for accuracy. This can be achieved in doing work 2.
-
-[9/19 Update]
-It turns out that the 'expanded_url' field of tweet objects returned by Rest API doesn't always give the 'expanded' url. Actually most of the urls are still shortened. And I couldn't find a good way to rank websites. So this work is postponed.
-
-2. [Complete] Recollect all the features needed for each user. Put data into my current model and test for accuracy (also need to replot the # followings vs. # followers graph and see the users distribution patterns)
+1. [Postponed] Collect domain names of urls collected from recent tweets of each user I have. Find a way to rank the domains and adding this as an additional feature to my current model and test for accuracy. This can be achieved in doing work 2. <br />
+[9/19 Update] <br />
+It turns out that the 'expanded_url' field of tweet objects returned by Rest API doesn't always give the 'expanded' url. Actually most of the urls are still shortened. And I couldn't find a good way to rank websites. So this work is postponed. <br />
+2. [Complete] Recollect all the features needed for each user. Put data into my current model and test for accuracy (also need to replot the # followings vs. # followers graph and see the users distribution patterns) <br />
 
 3. [Complete] Find more users (say, roughly 10000) in addition to the current dataset and try best to balance bots and humas. In order to balance, I need to do some analysis on the followers&followings of the users I have in the dataset (e.g., a user following a lot of bots is likely to be a bot). The lists of followers and followings of each user will be collected in doing work 2. Only active (and influential, maybe) users should be collected since inactive users could be very hard to identify.
 
