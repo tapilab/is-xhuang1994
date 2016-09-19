@@ -70,29 +70,19 @@ The results show a high classification accuracy -- 94% in total -- while the hig
 [9/19 Update] <br />
 It turns out that the 'expanded_url' field of tweet objects returned by Rest API doesn't always give the 'expanded' url. Actually most of the urls are still shortened. And I couldn't find a good way to rank websites. So this work is postponed. <br />
 2. [Complete] Recollect all the features needed for each user. Put data into my current model and test for accuracy (also need to replot the # followings vs. # followers graph and see the users distribution patterns) <br />
-
-3. [Complete] Find more users (say, roughly 10000) in addition to the current dataset and try best to balance bots and humas. In order to balance, I need to do some analysis on the followers&followings of the users I have in the dataset (e.g., a user following a lot of bots is likely to be a bot). The lists of followers and followings of each user will be collected in doing work 2. Only active (and influential, maybe) users should be collected since inactive users could be very hard to identify.
-
-[9/19 Update]
-It turns out that getting list of friends & followers for each user is very time consuming, since the rate limit is 15 requests per 15-minute window. So I turned to get more users randomly, assuming that there are quite a number of bots on Twitter and I won't miss all of them.
-
-4. [In-Progress] Manually identify some of the new users.
-
-5. [Postponed] Collect the number of followings (and followers, perhaps) of each user every hour for calculating the change rate of # followings. This is a very strong feature for classification.
-
-[9/19 Update]
-This is doable under the request rate limit. But it will take roughly a week to run and can not be paused once started. So I'll probably do it if I have an idled computer.
-
-6. [In-Progress] See if I can improve the classifier, e.g., change parameters, and apply standard boosting and bagging mentioned in the papers.
-
-7. [Postponed] With Pearson's value, I might be able to see which two features have some relationship.
-
-[9/19 Update]
-I'm not sure if this is meaningful. I'll do feature selection work instead.
-
-8. [Postponed] Sending any request to Twitter API with a deactivated account or a suspended account both return a 404 error. To distinguish these two kinds of accounts, go to https://twitter.com/intent/user?user_id=[userid] with the userid. If the account has been deactivated by the user, it will say "Sorry, that page doesn’t exist!". If the account has been suspended, it will say "Account suspended". Since there are only user ids but screen names in the honeypot dataset, that's the only way I've found to identify if an account has been suspended. So I might use some techniques to get this information automatically (e.g., web crawling?).
-
-[9/19 Update]
+3. [Complete] Find more users (say, roughly 10000) in addition to the current dataset and try best to balance bots and humas. In order to balance, I need to do some analysis on the followers&followings of the users I have in the dataset (e.g., a user following a lot of bots is likely to be a bot). The lists of followers and followings of each user will be collected in doing work 2. Only active (and influential, maybe) users should be collected since inactive users could be very hard to identify. <br />
+[9/19 Update] <br />
+It turns out that getting list of friends & followers for each user is very time consuming, since the rate limit is 15 requests per 15-minute window. So I turned to get more users randomly, assuming that there are quite a number of bots on Twitter and I won't miss all of them. <br />
+4. [In-Progress] Manually identify some of the new users. <br />
+5. [Postponed] Collect the number of followings (and followers, perhaps) of each user every hour for calculating the change rate of # followings. This is a very strong feature for classification. <br />
+[9/19 Update] <br />
+This is doable under the request rate limit. But it will take roughly a week to run and can not be paused once started. So I'll probably do it if I have an idled computer. <br />
+6. [In-Progress] See if I can improve the classifier, e.g., change parameters, and apply standard boosting and bagging mentioned in the papers. <br />
+7. [Postponed] With Pearson's value, I might be able to see which two features have some relationship. <br />
+[9/19 Update] <br />
+I'm not sure if this is meaningful. I'll do feature selection work instead. <br />
+8. [Postponed] Sending any request to Twitter API with a deactivated account or a suspended account both return a 404 error. To distinguish these two kinds of accounts, go to https://twitter.com/intent/user?user_id=[userid] with the userid. If the account has been deactivated by the user, it will say "Sorry, that page doesn’t exist!". If the account has been suspended, it will say "Account suspended". Since there are only user ids but screen names in the honeypot dataset, that's the only way I've found to identify if an account has been suspended. So I might use some techniques to get this information automatically (e.g., web crawling?). <br />
+[9/19 Update] <br />
 I did found a number of deactivated users in honeypot dataset. But I don't know if it's meaningful to analyze these users. I'll probably do it as a practice with web crawling when I have time.
 
 ## References
