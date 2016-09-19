@@ -144,7 +144,7 @@ def main():
     new = mClient['new_data']['new_users']
     new_id = [r['id'] for r in new.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}, 'lang': 'en'}, {'id': 1})]
     new_data = get_data_new(new_id, new)
-    print("\n\nData read for new users from new_data")
+    print("\n\nData read for new users from new_users")
     
     dataset_new = [r[1:] for r in new_data]
     
