@@ -4,7 +4,6 @@ import configparser
 import numpy as np
 import string
 import math
-import os
 import re
 import time
 
@@ -43,12 +42,16 @@ def get_users(all_users, api):
                                  'active': True}
                     active_users.append(this_user)
                 break
-            #Error code 429 means the requests have reached the rate limit
+            
             except TwitterError.TwitterRequestError as tre:
+                #Error code 429 means the requests have reached the rate limit
                 if tre.status_code == 429:
-                    print("z z z ...")
+                    #print("z z z ...")
                     time.sleep(60)
                     continue
+                #None of the users is active
+                elif tre.status_code == 404:
+                    break
                 else:
                     print("Unexpected error raised")
                     s = tre.__str__()
@@ -80,7 +83,7 @@ def get_timeline(user_id, api, collection):
                               'rt_count': tweet['retweet_count'], 
                               'is_rt': True if tweet['text'][0:2] == "RT" else False, 
                               'coordinated': True if tweet['coordinates'] != None else False, 
-                              'is_reply': False if tweet['in_reply_to_user_id_str'] == None else True
+                              'is_reply': False if tweet['in_reply_to_user_id_str'] == None else True,
                               'weekday': weekdays[tweet['created_at'][0:3]]}
                               
                 end_of_entities = [r['indices'][1] for r in tweet['entities']['urls']] + [[r['indices'][1] for r in tweet['entities']['hashtags']]]
@@ -109,13 +112,49 @@ def get_timeline(user_id, api, collection):
             s = e.__str__()
             print(s, "\n")
             continue
-    collection.update({'id': bot['id']}, {'$set': {'timeline': bt['timeline']}}, False, False)
+    collection.update({'id': this_user['id']}, {'$set': {'timeline': this_user['timeline']}}, False, False)
 
+'''
+def search_tweets(user_id, api, collection):
+    while True:
+        try:
+            timeline = collection.find_one({'id': user_id}, {'timeline': 1})['timeline']
+            tweets = [r['text'] for r in timeline if r['is_rt'] == False and r['is_reply'] == False]
+            tot_matches = 0
+            #Every word in search query has to have a match (doesn't need to be exact match)
+            for tweet in tweets:
+                words = [r for r in re.split('\s|\W+?\S*|http\S+', tweet) if r != '' and r != None]
+                if len(words) < 4:
+                    continue
+                query = ' '.join(words)
+                response = [r for r in api.request("search/tweets", {'q': query, 'result_type': 'mixed', 'count': 100})]
+                tot_matches += len(response)
+                print(query)
+                print(len(response), '\n')
+            break
+        except TwitterError.TwitterRequestError as tre:
+            if tre.status_code == 429:
+                print("z z z ...")
+                time.sleep(180)
+                continue
+            else:
+                print("Unexpected error raised with id =", user_id)
+                s = tre.__str__()
+                print(s, "\n")
+                continue
+        except Exception as e:
+            print("Unexpected error raised with id =", user_id)
+            s = e.__str__()
+            print(s, "\n")
+            continue
+    avg_matches = tot_matches/len(tweets)
+    return avg_matches
+'''
 
 #Calculate Jaccard Similarity between texts
 def calc_sim(text1, text2):
-    t1_1 = [r for r in re.split('\s+|\W+|(http)://\S+|(http)s://\S+|(#)\S+|(@)\S+', text1) if r != '' and r != None]
-    t2_1 = [r for r in re.split('\s+|\W+|(http)://\S+|(http)s://\S+|(#)\S+|(@)\S+', text2) if r != '' and r != None]
+    t1_1 = [r for r in re.split('\s+|(#)\S+|(@)\S+|(http)\S+|\W+', text1) if r != '' and r != None]
+    t2_1 = [r for r in re.split('\s+|(#)\S+|(@)\S+|(http)\S+|\W+', text2) if r != '' and r != None]
     
     conj = set([r for r in t1_1 if r in t2_1])
     disj = set(t1_1 + t2_1)
@@ -179,7 +218,7 @@ def main():
     
     for collection_name in ['bots', 'humans', 'new_users']:
         while True:
-            user = db['new_users'].find_one({'tweets_sim': {'$exists': 0}, 'timeline': {'$exists': 1}}, {'id': 1, 'timeline': 1})
+            user = new_data[collection_name].find_one({'tweets_sim': {'$exists': 0}, 'timeline': {'$exists': 1}}, {'id': 1, 'timeline': 1})
             if user == None:
                 break
             tweets = [r['text'] for r in user['timeline'] if r['is_reply'] == False and r['is_rt'] == False]
@@ -190,8 +229,24 @@ def main():
                 for i in list(range(len(tweets)-1)):
                     for j in list(range(i+1, len(tweets))):
                         sim = sim + np.array(calc_sim(tweets[i], tweets[j]))
-                sim = sim / ((len(tweets)+1)*n/2)
-            db['new_users'].update_one({'id': user['id']}, {'$set': {'tweets_sim': list(sim)}})
+                sim = sim / ((len(tweets)+1)*len(tweets)/2)
+            new_data[collection_name].update_one({'id': user['id']}, {'$set': {'tweets_sim': list(sim)}})
+    
+    for collection_name in ['bots', 'humans']:
+        while True:
+            user = old_data[collection_name].find_one({'tweets_sim': {'$exists': 0}, 'timeline': {'$exists': 1}}, {'id': 1, 'timeline': 1})
+            if user == None:
+                break
+            tweets = [r['text'] for r in user['timeline'] if r['text'][:2] != 'RT']
+            if len(tweets) < 2:
+                sim = [0, 0, 0]
+            else:
+                sim = np.array([0, 0, 0])
+                for i in list(range(len(tweets)-1)):
+                    for j in list(range(i+1, len(tweets))):
+                        sim = sim + np.array(calc_sim(tweets[i], tweets[j]))
+                sim = sim / ((len(tweets)+1)*len(tweets)/2)
+            old_data[collection_name].update_one({'id': user['id']}, {'$set': {'tweets_sim': list(sim)}})
     
     mClient.close()
 

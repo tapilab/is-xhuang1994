@@ -1,15 +1,16 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.metrics import f1_score, confusion_matrix, precision_score, recall_score, roc_curve, accuracy_score, precision_recall_curve, roc_auc_score
 from sklearn.cross_validation import KFold
 from pymongo import MongoClient
 import numpy as np
+import matplotlib.pyplot as plt
 
 #This file reads data from polluters.txt and legitimate_users.txt (old data) or from Mongodb (recent data) and classify the records
 
 num_decimals = 4
 #Read data from Mongodb, this function only works for new_data
-def get_data_new(ids, collection, old_data=False):
+def get_data_new(ids, collection):
     users = []
     for id in ids:
         user = list(collection.find({'id': id}))[0]
@@ -19,11 +20,16 @@ def get_data_new(ids, collection, old_data=False):
                       len(user['screen_name']), 
                       user['friends_count'], 
                       user['followers_count'], 
-                      user['friends_count']/user['followers_count'] if user['followers_count'] != 0 else 0, 
+                      user['friends_count']/user['followers_count'] if user['followers_count'] != 0 else 1e9, 
+                      
+                      user['statuses_count']/user['followers_count'] if user['followers_count'] != 0 else 1e9,
+                      user['statuses_count']/user['friends_count'] if user['friends_count'] != 0 else 1e9,
+                      
                       user['statuses_count'], 
                       len(user['description']), 
-                      int(user['goe_enabled'])]
-                      #+ user['tweets_sim']
+                      int(user['goe_enabled']), 
+                      np.std(user['tweets_sim'])] \
+                      + user['tweets_sim']
         
         #timeline_data: 14+6+6 = 26 features
         timeline_data = []
@@ -35,12 +41,13 @@ def get_data_new(ids, collection, old_data=False):
         for d in list(range(7)):
             timeline_data.append(len([r for r in posts if r['weekday'] == d]))
         for d in list(range(7)):
-            timeline_data.append(len([r for r in posts if r['weekday'] == d]) / (len(posts) if len(posts) != 0 else 1))
+            timeline_data.append(len([r for r in posts if r['weekday'] == d]) / (len(posts) if len(posts) != 0 else 1e-15))
         
         for post in posts:
             urls += post['urls']
             mentions += post['mentions']
             hashtags += post['hashtags']
+                
         timeline_data += [len(urls)/len(posts), 
                           len(set(urls))/len(posts), 
                           len(mentions)/len(posts), 
@@ -66,46 +73,58 @@ def get_data_new(ids, collection, old_data=False):
     return users
 
 
-#Scale each feature of the data with its mean or maximum value
-def scale(dataset, with_mean=False, with_max=False):
-    if with_mean == True:
-        max_values = np.matrix(dataset).mean(0).tolist()[0]
-    if with_max == True:
-        max_values = np.matrix(dataset).max(0).tolist()[0]
-    dataset = [[x/y for x, y in list(zip(z, max_values))] for z in dataset]
+def plot_curve(a, b, name, w=0.5):
+    
+    plt.plot(a, b, 'b')
+    plt.legend(loc='lower right')
+    plt.plot([0,1],[0,1],'r--')
+    plt.xlim([-0.1,1.2])
+    plt.ylim([-0.1,1.2])
+    if name == 'ROC':
+        plt.title('Receiver Operating Characteristic\ncost of bots = %g' % w)
+        plt.ylabel('True Positive Rate')
+        plt.xlabel('False Positive Rate')
+    elif name == 'PR':
+        plt.title('Precision-Recall\ncost of bots = %g' % w)
+        plt.ylabel('Precision')
+        plt.xlabel('Recall')
+    plt.show()
+
+
 
 
 #Do cross validation manually to get the f1 score and confusion matrix
 #Also count misclassified bots and humans respectively, and calculate the accuracies respectively
-def cross_val(data_x, data_y, classifier, kFold):
+def cross_val(data_x, data_y, classifier, kFold, b_cost=1, h_cost=1, w=0.5):
     e_h, e_b = 0, 0
-    predictions, y_tests = [], []
-
+    y_tests, pred_probas = [], []
+    
     for train_index, test_index in kFold:
         data_x_, data_y_ = np.array(data_x), np.array(data_y)
         X_train, X_test = list(data_x_[train_index]), list(data_x_[test_index])
         y_train, y_test = list(data_y_[train_index]), list(data_y_[test_index])
         classifier.fit(X_train, y_train)
-        prediction = list(classifier.predict(X_test))
-        predictions += prediction
+        pred_proba = [r[0] for r in classifier.predict_proba(X_test)]
         y_tests += y_test
-        i = 0
-        while i < len(y_test):
-            if prediction[i] != y_test[i]:
-                if y_test[i] == 0:
-                    e_b += 1
-                else:
-                    e_h += 1
-            i += 1
+        pred_probas += pred_proba
     
-    total_acc = 1-(e_h+e_b)/len(y_tests)
-    bot_acc = 1 - e_b/y_tests.count(0)
-    human_acc = 1 - e_h/y_tests.count(1)
+    predictions = [0 if p*b_cost > (1-p)*h_cost else 1 for p in pred_probas]
+    roc_auc = roc_auc_score(y_tests, pred_probas)
+    total_acc = accuracy_score(y_tests, predictions)
+    precision, recall, thresholds = precision_recall_curve(y_tests, pred_probas, pos_label=0)
+    fpr, tpr, thresholds = roc_curve(y_tests, pred_probas, pos_label=0)
+    precision_bots = precision_score(y_tests, predictions, pos_label = 0)
+    precision_humans = precision_score(y_tests, predictions, pos_label = 1)
+    recall_bots = recall_score(y_tests, predictions, pos_label = 0)
+    recall_humans = recall_score(y_tests, predictions, pos_label = 1)
     f1_bots = f1_score(y_tests, predictions, pos_label = 0)
     f1_humans = f1_score(y_tests, predictions, pos_label = 1)
     conf_matrix = np.matrix(list(confusion_matrix(y_tests, predictions)))
     
-    return [total_acc, bot_acc, human_acc, f1_bots, f1_humans, conf_matrix]
+    #plot_curve(fpr, tpr, 'ROC', w)
+    plot_curve(recall, precision, 'PR', w)
+    
+    return [total_acc, precision_bots, precision_humans, recall_bots, recall_humans, f1_bots, f1_humans, roc_auc, conf_matrix]
 
 #FYI, the labels for confusion matrix are:
 #         classified as
@@ -116,7 +135,7 @@ def cross_val(data_x, data_y, classifier, kFold):
 
 def main():
     mClient = MongoClient()
-    
+    '''
     bots = mClient['new_data']['bots']
     bots_id = [r['id'] for r in bots.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}, 'lang': 'en'}, {'id': 1})]
     bots_data = get_data_new(bots_id, bots)
@@ -140,21 +159,43 @@ def main():
     print("f1 score: \nBots: %g%% \nHumans: %g%%\n" % tuple([round(r, num_decimals)*100 for r in result_cv[3:5]]))
     print(result_cv[5])
     
-    
+    print(rf.feature_importances_)
+    '''
     new = mClient['new_data']['new_users']
-    new_id = [r['id'] for r in new.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}, 'lang': 'en'}, {'id': 1})]
-    new_data = get_data_new(new_id, new)
-    print("\n\nData read for new users from new_users")
+    new_bots = [r['id'] for r in new.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}, 'label': 0}, {'id': 1})]
+    new_bots_data = get_data_new(new_bots, new)
+    new_humans = [r['id'] for r in new.find({'timeline': {'$exists': 1, '$not': {'$size': 0}}, 'label': 1}, {'id': 1})]
+    new_humans_data = get_data_new(new_humans, new)
+    print("\n\nData read for bots and humans from new_users")
+    mClient.close()
     
-    dataset_new = [r[1:] for r in new_data]
+    dataset_X = [r[1:] for r in new_bots_data + new_humans_data]
+    dataset_Y = [0] * len(new_bots_data) + [1] * len(new_humans_data)
     
-    scale(dataset_new, with_mean=True)
-    print("Data scaled")
+    print("\n%d instances, where %g are bots\n" % (len(dataset_X), dataset_Y.count(0)/len(dataset_Y)))
     
-    rf.fit(dataset_X, dataset_Y)
-    prediction = list(rf.predict(dataset_new))
-    print("\n%d users in total\n%d are classified as bots \n%d are classified as humans\n" % (len(prediction), prediction.count(0), prediction.count(1)))
-
-
+    kFold = KFold(n = len(dataset_X), n_folds = 4, shuffle = True, random_state=0)
+    rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, class_weight = {0: 5})
+    
+    result_cv = cross_val(dataset_X, dataset_Y, rf, kFold)
+    print("Total accuracy: %0.4f \n" % result_cv[0])
+    print("Precision: \nBots: %0.4f \nHumans: %0.4f\n" % (result_cv[1], result_cv[2]))
+    print("Recall: \nBots: %0.4f \nHumans: %0.4f\n" % (result_cv[3], result_cv[4]))
+    print("f1 score: \nBots: %g \nHumans: %g\n" % tuple([round(r, num_decimals) for r in result_cv[5:7]]))
+    print("ROC_AUC score: \n", result_cv[7], '\n')
+    print(result_cv[8], '\n')
+    print(rf.feature_importances_)
+    
+    
+    for i in [0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.999]:
+        print("\nWith cost of bots = %g:\n" % i)
+        rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, class_weight = {0: i, 1: 1-i}, random_state = 0)
+        result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, w=i)
+        #rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50)
+        #result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, i, 1-i, i)
+        print("Precision: %0.4f" % result_cv[1])
+        print("Recall: %0.4f" % result_cv[3])
+    
+    
 if __name__ == '__main__':
     main()
