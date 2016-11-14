@@ -28,7 +28,12 @@ def get_data_new(ids, collection):
                       user['statuses_count'], 
                       len(user['description']), 
                       int(user['goe_enabled']), 
-                      np.std(user['tweets_sim'])] \
+                      np.std(user['tweets_sim']), 
+                      user['followers_change_rate'], 
+                      user['friends_change_rate'],
+                      user['friends_std'], 
+                      user['followers_std'], 
+                      user['ratio_std']] \
                       + user['tweets_sim']
         
         #timeline_data: 14+6+6 = 26 features
@@ -122,7 +127,7 @@ def cross_val(data_x, data_y, classifier, kFold, b_cost=1, h_cost=1, w=0.5):
     conf_matrix = np.matrix(list(confusion_matrix(y_tests, predictions)))
     
     #plot_curve(fpr, tpr, 'ROC', w)
-    plot_curve(recall, precision, 'PR', w)
+    #plot_curve(recall, precision, 'PR', w)
     
     return [total_acc, precision_bots, precision_humans, recall_bots, recall_humans, f1_bots, f1_humans, roc_auc, conf_matrix]
 
@@ -175,9 +180,9 @@ def main():
     print("\n%d instances, where %g are bots\n" % (len(dataset_X), dataset_Y.count(0)/len(dataset_Y)))
     
     kFold = KFold(n = len(dataset_X), n_folds = 4, shuffle = True, random_state=0)
-    rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, class_weight = {0: 5})
+    rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, random_state=0)
     
-    result_cv = cross_val(dataset_X, dataset_Y, rf, kFold)
+    result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, 10, 1)
     print("Total accuracy: %0.4f \n" % result_cv[0])
     print("Precision: \nBots: %0.4f \nHumans: %0.4f\n" % (result_cv[1], result_cv[2]))
     print("Recall: \nBots: %0.4f \nHumans: %0.4f\n" % (result_cv[3], result_cv[4]))
@@ -186,7 +191,7 @@ def main():
     print(result_cv[8], '\n')
     print(rf.feature_importances_)
     
-    
+    '''
     for i in [0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.999]:
         print("\nWith cost of bots = %g:\n" % i)
         rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, class_weight = {0: i, 1: 1-i}, random_state = 0)
@@ -195,7 +200,11 @@ def main():
         #result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, i, 1-i, i)
         print("Precision: %0.4f" % result_cv[1])
         print("Recall: %0.4f" % result_cv[3])
+    '''
     
+    for i in range(len(dataset_X[0])):
+        result_cv_ = cross_val([r[:i]+r[i+1:] for r in dataset_X], dataset_Y, rf, kFold, 10, 1)
+        print("Feature %d\tPrecision %0.4f\tRecall %0.4f\tAUC %0.5f" % (i, result_cv[1]-result_cv_[1], result_cv[3]-result_cv_[3], result_cv[7]-result_cv_[7]))
     
 if __name__ == '__main__':
     main()
