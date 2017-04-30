@@ -55,22 +55,39 @@ For each user, 45 features were extracted from available data, the 22 most impor
  Average number of time each tweet is retweeted
 
  Number of tweets posted on Sundays
+
  Number of tweets posted on Saturdays
+
  1-gram Jaccard similarity between each two tweets
+
  Number of statuses over number of followers
+
  Number of friends over number of followers
+
  Number of unique mentions over number of posts
+
  Number of hashtags over number of posts
+
  Number of friends
+
  Number of statuses over number of friends
+
  Number of statuses
+
  2-gram Jaccard similarity between each two tweets
+
  Number of tweets posted on Fridays
+
  Length of user description
+
  Number of unique urls over number of tweets
+
  Number of mentions over number tweets
+
  Number of tweets posted on Saturdays
+
  Length of username
+
  Ratio of unique hashtags over tweets
 
 ## Evaluation
