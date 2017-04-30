@@ -17,16 +17,19 @@ A Long-Term Study of Content Polluters on Twitter
 ## Data source
 
 I used the social honeypot dataset[1] in the beginning. The classification model was developed based on papers I read and tested with data from honeypot dataset. My initial model uses Random Forest Classifier with default parameters from sk-learn. The cross validation result is:
+
 ![Image](../master/src/graphs/Result.png?raw=true)  
 Figure 1: Cross validation results with old data of old users
 
 As is suggested by Dr. Culotta, the performance is a little "too good" and it is mentioned in the paper that there are some threshold used in collecting users so it could make the result not generalizable. To reveal the problem I tried plotting graphs with the user data. Here's some funny graphs I've got:
+
 ![Image](../master/src/graphs/old_data.png?raw=true)
 Figure 2: Funny graphs based on old data of old users
 
 As you can see there's a clear boundry for the ratio of # followers on # followings (about 0.9), which doesn't make any sense unless it is a threshold used in collecting users and their data. So the data we've got in social honeypot dataset is highly biased.
 
 To prove this I collected the most recent data of same users and tested my model with it. The cross validation result and the graph both become a little bit "normal" this time:
+
 ![Image](../master/src/graphs/Result_new.png?raw=true)  
 Figure 3: Cross validation results with new data of old users
 ![Image](../master/src/graphs/new_data.png?raw=true)
@@ -35,6 +38,7 @@ Figure 4: Graphs based on new_data of old users.
 The performace is a little bit worse which is expected. And in the graph some of the users appear below the boundry, but it still looks biased as most of the users are still above the boundry.
 
 After I realize the problem I "randomly" collected 1100 users on Twitter through Streaming API – the first 1100 who posted anything after I started collecting process were collected. It's not completely random but we might still draw some generalizable conclusions from it. I then spent a few weeks to manually label 523 of the users, in which 54 are bots and 469 are humans. I also plotted the same graph as above and now it looks completely unbiased:
+
 ![Image](../master/src/graphs/new_users.png?raw=true)
 Figure 5: Graph based on new_users
 
@@ -43,9 +47,13 @@ Figure 5: Graph based on new_users
 For each user, 45 features were extracted from available data, the 22 most important features are listed below (ordered by importance)
 
  Number of replies over number of posts
+
  3-gram Jaccard similarity between each two tweets
+
  Number of retweets over number of posts
+
  Average number of time each tweet is retweeted
+
  Number of tweets posted on Sundays
  Number of tweets posted on Saturdays
  1-gram Jaccard similarity between each two tweets
@@ -90,10 +98,12 @@ AUC of ROC: 0.7654
 
 It turns out that Random Forest Classifier has better performance than Logistic Regression.
 The change of precision and recall with max_depth is shown in Figure 6. The best value for max_depth, according to the figure, is 7.
+
 ![Image](../master/src/graphs/max_depth.png?raw=true)
 Figure 6: Precision, recall, and AUC of ROC vs. max_depth
 
 The change of precision and recall with min_samples_leaf is shown in Figure 7. The best value for min_samples_leaf, according to the figure, is 6.
+
 ![Image](../master/src/graphs/min_samples_leaf.png?raw=true)
 Figure 7: Precision, recall, and AUC of ROC vs. min_samples_leaf
 
@@ -102,6 +112,7 @@ So the classification model I selected is Random Forest Classifier with max_dept
 ## Performance
 
 I used 4-fold cross-validation with different bots_cost to show the performance of my model. The result of my selected classification model is shown in Figure 8. It turns out that precision or recall can be very close to or even equal to 1, by varying the bots_cost. As bots_cost increases, precision of bots decreases and recall of bots increases, dramatically. I think it proves that my classification model is effective.
+
 ![Image](../master/src/graphs/final_result.png?raw=true)
 Figure 8: Precision, recall, and AUC of ROC vs. bots_cost using selected classification model.
 
