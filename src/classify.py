@@ -78,19 +78,19 @@ def get_data_new(ids, collection):
     return users
 
 
-def plot_curve(a, b, name, w=0.5):
-    
-    plt.plot(a, b, 'b')
+def plot_curve(a, b, name):
+    print(len(a))
+    plt.plot(a, b, 'b-', linewidth=3)
     plt.legend(loc='lower right')
     plt.plot([0,1],[0,1],'r--')
     plt.xlim([-0.1,1.2])
     plt.ylim([-0.1,1.2])
     if name == 'ROC':
-        plt.title('Receiver Operating Characteristic\ncost of bots = %g' % w)
+        plt.title('Receiver Operating Characteristic\ncost of bots = %g' % 1)
         plt.ylabel('True Positive Rate')
         plt.xlabel('False Positive Rate')
     elif name == 'PR':
-        plt.title('Precision-Recall\ncost of bots = %g' % w)
+        plt.title('Precision-Recall\ncost of bots = %g' % 1)
         plt.ylabel('Precision')
         plt.xlabel('Recall')
     plt.show()
@@ -100,7 +100,7 @@ def plot_curve(a, b, name, w=0.5):
 
 #Do cross validation manually to get the f1 score and confusion matrix
 #Also count misclassified bots and humans respectively, and calculate the accuracies respectively
-def cross_val(data_x, data_y, classifier, kFold, b_cost=1, h_cost=1, w=0.5):
+def cross_val(data_x, data_y, classifier, kFold, b_cost=1, h_cost=1):
     e_h, e_b = 0, 0
     y_tests, pred_probas = [], []
     
@@ -112,9 +112,9 @@ def cross_val(data_x, data_y, classifier, kFold, b_cost=1, h_cost=1, w=0.5):
         pred_proba = [r[0] for r in classifier.predict_proba(X_test)]
         y_tests += y_test
         pred_probas += pred_proba
-    
+
     predictions = [0 if p*b_cost > (1-p)*h_cost else 1 for p in pred_probas]
-    roc_auc = roc_auc_score(y_tests, pred_probas)
+    roc_auc = roc_auc_score([1 if x==0 else 0 for x in y_tests], pred_probas)
     total_acc = accuracy_score(y_tests, predictions)
     precision, recall, thresholds = precision_recall_curve(y_tests, pred_probas, pos_label=0)
     fpr, tpr, thresholds = roc_curve(y_tests, pred_probas, pos_label=0)
@@ -126,8 +126,8 @@ def cross_val(data_x, data_y, classifier, kFold, b_cost=1, h_cost=1, w=0.5):
     f1_humans = f1_score(y_tests, predictions, pos_label = 1)
     conf_matrix = np.matrix(list(confusion_matrix(y_tests, predictions)))
     
-    #plot_curve(fpr, tpr, 'ROC', w)
-    #plot_curve(recall, precision, 'PR', w)
+    #plot_curve(fpr, tpr, 'ROC')
+    #plot_curve(recall, precision, 'PR')
     
     return [total_acc, precision_bots, precision_humans, recall_bots, recall_humans, f1_bots, f1_humans, roc_auc, conf_matrix]
 
@@ -179,10 +179,13 @@ def main():
     
     print("\n%d instances, where %g are bots\n" % (len(dataset_X), dataset_Y.count(0)/len(dataset_Y)))
     
-    kFold = KFold(n = len(dataset_X), n_folds = 4, shuffle = True, random_state=0)
-    rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, random_state=0)
     
-    result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, 10, 1)
+    
+    kFold = KFold(n = len(dataset_X), n_folds = 4, shuffle = True, random_state=0)
+    rf = RandomForestClassifier(criterion = 'entropy', random_state=0)
+    lr = LogisticRegression(random_state=0)
+    
+    result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, 1, 1)
     print("Total accuracy: %0.4f \n" % result_cv[0])
     print("Precision: \nBots: %0.4f \nHumans: %0.4f\n" % (result_cv[1], result_cv[2]))
     print("Recall: \nBots: %0.4f \nHumans: %0.4f\n" % (result_cv[3], result_cv[4]))
@@ -191,20 +194,90 @@ def main():
     print(result_cv[8], '\n')
     print(rf.feature_importances_)
     
+    
+    precision, recall = [], []
+    b = [(0.1*i) for i in range(1, 100)]
+    for b_ in b:
+        p, r = [], []
+        for i in range(1):
+            rf = RandomForestClassifier(random_state=i)
+            result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, b_, 1)
+            p.append(result_cv[1])
+            r.append(result_cv[3])
+        precision.append(np.mean(p))
+        recall.append(np.mean(r))
+    plt.title("Precision and Recall\ncost of bots = 1")
+    plt.plot(b, precision, 'b-', label='Precision', linewidth=3)
+    plt.plot(b, recall, 'g-', label='Recall', linewidth=3)
+    plt.xlabel("False Negative Cost of Bots")
+    plt.ylim(-0.1, 1.1)
+    plt.legend(loc="lower right")
+    plt.show()
+    
+    
+    
+    
     '''
+    precision, recall, AUC = [], [], []
+    l = range(1, 20)
+    for md in l:
+        p, r, a = [], [], []
+        for i in range(4):
+            rf = RandomForestClassifier(random_state=i, max_depth=md)
+            result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, 1, 1)
+            p.append(result_cv[1])
+            r.append(result_cv[3])
+            a.append(result_cv[7])
+        precision.append(np.mean(p))
+        recall.append(np.mean(r))
+        AUC.append(np.mean(a))
+    plt.plot(l, precision, 'bo-', label='Precision')
+    plt.plot(l, recall, 'go-', label='Recall')
+    plt.plot(l, AUC, 'ro-', label='AUC')
+    plt.xlabel("max_depth")
+    plt.ylim(-0.1, 1.1)
+    plt.legend(loc="right")
+    plt.show()
+    
+    
+    precision, recall, AUC = [], [], []
+    l = range(1, 30)
+    for msl in l:
+        p, r, a = [], [], []
+        for i in range(4):
+            rf = RandomForestClassifier(random_state=i, max_depth=msl)
+            result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, 20, 1)
+            p.append(result_cv[1])
+            r.append(result_cv[3])
+            a.append(result_cv[7])
+        precision.append(np.mean(p))
+        recall.append(np.mean(r))
+        AUC.append(np.mean(a))
+    plt.plot(l, precision, 'bo-', label='Precision')
+    plt.plot(l, recall, 'go-', label='Recall')
+    plt.plot(l, AUC, 'ro-', label='AUC')
+    plt.xlabel("max_depth")
+    plt.ylim(-0.1, 1.1)
+    plt.legend(loc="right")
+    plt.show()
+    
+    
     for i in [0.001, 0.01, 0.05, 0.1, 0.5, 0.9, 0.95, 0.99, 0.999]:
         print("\nWith cost of bots = %g:\n" % i)
-        rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, class_weight = {0: i, 1: 1-i}, random_state = 0)
-        result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, w=i)
-        #rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50)
-        #result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, i, 1-i, i)
+        #rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50, class_weight = {0: i, 1: 1-i}, random_state = 0)
+        #result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, w=i)
+        rf = RandomForestClassifier(criterion = 'entropy', n_estimators = 50)
+        result_cv = cross_val(dataset_X, dataset_Y, rf, kFold, i, 1-i, i)
         print("Precision: %0.4f" % result_cv[1])
         print("Recall: %0.4f" % result_cv[3])
-    '''
+    
     
     for i in range(len(dataset_X[0])):
         result_cv_ = cross_val([r[:i]+r[i+1:] for r in dataset_X], dataset_Y, rf, kFold, 10, 1)
         print("Feature %d\tPrecision %0.4f\tRecall %0.4f\tAUC %0.5f" % (i, result_cv[1]-result_cv_[1], result_cv[3]-result_cv_[3], result_cv[7]-result_cv_[7]))
+    '''
+    
+    
     
 if __name__ == '__main__':
     main()
